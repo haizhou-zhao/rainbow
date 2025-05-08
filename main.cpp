@@ -17,7 +17,7 @@ int main(int , const char **) {
   SqlBaseParser::CompoundOrSingleStatementContext* parsed = parser.compoundOrSingleStatement();
 
   std::cout << parsed->toStringTree() << std::endl;
-  std::cout << AstBuilder().visitCompoundOrSingleStatement(parsed) << std::endl << std::endl;
+  CreateTable plan = std::any_cast<CreateTable>(AstBuilder().visitCompoundOrSingleStatement(parsed));
 
   return 0;
 }
