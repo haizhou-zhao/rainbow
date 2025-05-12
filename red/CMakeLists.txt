@@ -40,8 +40,9 @@ antlr_target(SqlBaseParser ${PROJECT_SOURCE_DIR}/grammar/SqlBaseParser.g4
 include_directories(${ANTLR_SqlBaseLexer_OUTPUT_DIR})
 include_directories(${ANTLR_SqlBaseParser_OUTPUT_DIR})
 
-add_library(red private/AstBuilder.cpp private/SqlPlan.cpp
+add_library(red private/AstBuilder.cpp
             ${ANTLR_SqlBaseLexer_CXX_OUTPUTS}
             ${ANTLR_SqlBaseParser_CXX_OUTPUTS})
 target_link_libraries(red antlr4_static)
 target_include_directories(red PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/public)
+target_include_directories(red PUBLIC ${CMAKE_SOURCE_DIR}/light/public)

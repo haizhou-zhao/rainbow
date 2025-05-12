@@ -1,12 +1,9 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include <vector>
-
-struct Identifier
-{
-    std::vector<std::string> nameParts;
-};
+#include "TreeNode.h"
 
 struct DataType
 {
@@ -25,11 +22,24 @@ struct ColumnDef
     // Metadata metadata;
 };
 
-struct CreateTable
+struct UnresolvedIdentifier : public TreeNode
 {
-    Identifier name;
+    std::vector<std::string> nameParts;
+
+    bool nodeEquals(const TreeNode& other) const override;
+};
+
+struct CreateTable : public TreeNode
+{
+    std::shared_ptr<UnresolvedIdentifier> name;
     std::vector<ColumnDef> columns;
     // std::vector<Transform> partitioning;
     // TableSpec tableSpec;
     bool bIfNotExist;
+
+    CreateTable() : name(new UnresolvedIdentifier()) {
+        children.push_back(name);
+    }
+
+    bool nodeEquals(const TreeNode& other) const override;
 };
