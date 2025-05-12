@@ -4,6 +4,8 @@
 #include "SqlBaseLexer.h"
 #include "SqlBaseParser.h"
 #include "AstBuilder.h"
+#include "Rule.h"
+#include "TreeNode.h"
 
 using namespace sqlgrammar;
 using namespace antlr4;
@@ -18,6 +20,8 @@ int main(int , const char **) {
 
   std::cout << parsed->toStringTree() << std::endl;
   CreateTable plan = std::any_cast<CreateTable>(AstBuilder().visitCompoundOrSingleStatement(parsed));
+  ResolveCatalogs r;
+  plan.resolveRulesDownWithPruning([](const TreeNode* n){ return false; }, &r);
 
   return 0;
 }

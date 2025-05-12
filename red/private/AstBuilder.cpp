@@ -98,7 +98,7 @@ std::any AstBuilder::AstBuilder::visitCreateTable(SqlBaseParser::CreateTableCont
     CreateTable plan;
     CreateTableHeader header = std::any_cast<CreateTableHeader>(visitCreateTableHeader(context->createTableHeader()));
     auto identifiers = header.identifierRefCtx->multipartIdentifier()->errorCapturingIdentifier();
-    std::transform(identifiers.begin(), identifiers.end(), std::back_inserter(plan.name.nameParts), 
+    std::transform(identifiers.begin(), identifiers.end(), std::back_inserter(plan.name->nameParts), 
         [](SqlBaseParser::ErrorCapturingIdentifierContext* ctx) { return ctx->identifier()->getText(); }
     );
     auto cols = std::any_cast<TableElements>(visitTableElementList(context->tableElementList()));
