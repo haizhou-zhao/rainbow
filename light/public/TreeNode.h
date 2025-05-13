@@ -4,13 +4,14 @@
 #include <string>
 #include <vector>
 #include <unordered_set>
+#include "RuleExecResult.h"
 
 class Rule;
 
-class TreeNode
+class TreeNode : public std::enable_shared_from_this<TreeNode>
 {
 private:
-    bool bAnalyzed;
+    bool bAnalyzed = false;
     std::unordered_set<std::string> ineffectiveRuleNames;
 
     bool isEffective(const Rule* rule) const;
@@ -20,13 +21,13 @@ private:
 public:
     std::shared_ptr<TreeNode> parent;
     std::vector<std::shared_ptr<TreeNode>> children;
-    
+
     virtual bool nodeEquals(const TreeNode& other) const = 0;
 
     bool operator==(const TreeNode& other) const;
 
     // return whether the tree rooted at the current node is changed
-    bool resolveRulesDownWithPruning(
+    RuleExecResult resolveRulesDownWithPruning(
         std::function<bool(const TreeNode*)> shouldPrune,
         const Rule* rule);
 };

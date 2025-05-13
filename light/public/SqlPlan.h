@@ -22,22 +22,32 @@ struct ColumnDef
     // Metadata metadata;
 };
 
-struct UnresolvedIdentifier : public TreeNode
+/**
+ * Represents an (unresolved) identifier, but derivable
+ */
+struct Identifier : public TreeNode
 {
     std::vector<std::string> nameParts;
 
     bool nodeEquals(const TreeNode& other) const override;
 };
 
+struct ResolvedIdentifier : public Identifier
+{
+    std::string catalogName;
+
+    bool nodeEquals(const TreeNode& other) const override;
+};
+
 struct CreateTable : public TreeNode
 {
-    std::shared_ptr<UnresolvedIdentifier> name;
+    std::shared_ptr<Identifier> name;
     std::vector<ColumnDef> columns;
     // std::vector<Transform> partitioning;
     // TableSpec tableSpec;
     bool bIfNotExist;
 
-    CreateTable() : name(new UnresolvedIdentifier()) {
+    CreateTable() : name(new Identifier()) {
         children.push_back(name);
     }
 

@@ -1,9 +1,18 @@
 #include "SqlPlan.h"
 
-bool UnresolvedIdentifier::nodeEquals(const TreeNode& other) const {
-    const UnresolvedIdentifier* o = dynamic_cast<const UnresolvedIdentifier*>(&other);
+bool Identifier::nodeEquals(const TreeNode& other) const {
+    const Identifier* o = dynamic_cast<const Identifier*>(&other);
     if (o) {
         return nameParts == o->nameParts;
+    } else {
+        return false;
+    }
+}
+
+bool ResolvedIdentifier::nodeEquals(const TreeNode& other) const {
+    const ResolvedIdentifier* o = dynamic_cast<const ResolvedIdentifier*>(&other);
+    if (o) {
+        return nameParts == o->nameParts && catalogName == o->catalogName;
     } else {
         return false;
     }

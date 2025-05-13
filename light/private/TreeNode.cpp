@@ -24,20 +24,28 @@ bool TreeNode::operator==(const TreeNode& other) const {
     }
 }
 
-bool TreeNode::resolveRulesDownWithPruning(
+RuleExecResult TreeNode::resolveRulesDownWithPruning(
     std::function<bool(const TreeNode*)> shouldPrune,
     const Rule* rule)
 {
     bool changed = false;
+    std::shared_ptr<TreeNode> currentNode = shared_from_this();
+    std::shared_ptr<TreeNode> resolvedNode;
     if (!bAnalyzed && !shouldPrune(this) && isEffective(rule)) {
-        changed = rule->apply(this);
-        std::for_each(children.begin(), children.end(), [&](std::shared_ptr<TreeNode> child) {
-            bool childChanged = child->resolveRulesDownWithPruning(shouldPrune, rule);
-            if (!changed) changed = childChanged;
+        auto result = rule->apply(currentNode);
+        resolvedNode = result.afterRule;
+        changed = result.bChanged;
+        std::for_each(children.begin(), children.end(), [&](const std::shared_ptr<TreeNode>& child) {
+            auto childResult = child->resolveRulesDownWithPruning(shouldPrune, rule);
+            childResult.afterRule->parent = resolvedNode;
+            resolvedNode->children.push_back(childResult.afterRule);
+            if (!changed) changed = childResult.bChanged;
         });
+    } else {
+        resolvedNode = currentNode;
     }
     if (!changed) {
         markIneffective(rule);
     }
-    return changed;
+    return RuleExecResult(currentNode, changed);
 }
