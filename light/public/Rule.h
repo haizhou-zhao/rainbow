@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <string>
+#include "RuleExecResult.h"
 
 class TreeNode;
 
@@ -13,7 +14,7 @@ protected:
 public:
     // return whether the plan is changed
     // does not change parent or children
-    virtual bool apply(TreeNode* plan) const = 0;
+    virtual RuleExecResult apply(std::shared_ptr<TreeNode> plan) const = 0;
 
     std::string name() const { return ruleName; }
 };
@@ -22,5 +23,5 @@ class ResolveCatalogs : public Rule {
 public:
     ResolveCatalogs() : Rule("ResolveCatalogs") {}
 
-    bool apply(TreeNode* plan) const override;
+    RuleExecResult apply(std::shared_ptr<TreeNode> plan) const override;
 };

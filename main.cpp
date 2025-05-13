@@ -19,9 +19,9 @@ int main(int , const char **) {
   SqlBaseParser::CompoundOrSingleStatementContext* parsed = parser.compoundOrSingleStatement();
 
   std::cout << parsed->toStringTree() << std::endl;
-  CreateTable plan = std::any_cast<CreateTable>(AstBuilder().visitCompoundOrSingleStatement(parsed));
+  std::shared_ptr<CreateTable> plan = std::any_cast<std::shared_ptr<CreateTable>>(AstBuilder().visitCompoundOrSingleStatement(parsed));
   ResolveCatalogs r;
-  plan.resolveRulesDownWithPruning([](const TreeNode* n){ return false; }, &r);
+  plan->resolveRulesDownWithPruning([](const TreeNode* n){ return false; }, &r);
 
   return 0;
 }
