@@ -2,7 +2,6 @@
 
 class CatalogManager;
 
-struct SqlContext
-{
-    CatalogManager* catalogManager;
+struct SqlContext {
+  CatalogManager *catalogManager;
 };

@@ -1,14 +1,12 @@
 #pragma once
-#include <vector>
 #include "RuleExecutor.h"
+#include <vector>
 
-class Analyzer
-{
+class Analyzer {
 private:
-    std::vector<Batch> batches;
-
+  std::vector<Batch> batches;
 
 public:
-    Analyzer();
-    ~Analyzer();
+  Analyzer();
+  ~Analyzer();
 };

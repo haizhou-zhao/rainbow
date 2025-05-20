@@ -5,6 +5,27 @@ set(CMAKE_CXX_STANDARD 17)
 
 project(rainbow)
 
+# Formatting cmake list files are manual invoking
+# cmake-format with
+# find <directory> -name "CMakeLists.txt" -o -name "*.cmake" | xargs -I {} cmake-format {}
+# https://cmake-format.readthedocs.io/en/latest/installation.html
+# formatting C++ sources are automated but
+# requiring formatter utilities to be installed
+# https://clang.llvm.org/docs/ClangFormat.html
+find_program(CLANG_FORMAT clang-format REQUIRED)
+
+file(GLOB_RECURSE CXX_SOURCES 
+    "*.h"
+    ".cpp"
+)
+
+add_custom_target(clangformat
+    COMMAND ${CLANG_FORMAT} -i -style=file ${CXX_SOURCES}
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMENT "Formatting code with clang-format"
+    VERBATIM
+)
+
 # project light includes many common utilities and internal data structure
 # which is a common dependencies of the rest of sub-modules
 add_subdirectory(light)
@@ -21,3 +42,5 @@ get_target_property(RED_INCLUDES red INCLUDE_DIRECTORIES)
 get_target_property(ORANGE_INCLUDES orange INCLUDE_DIRECTORIES)
 get_target_property(BRIDGE_INCLUDES bridge INCLUDE_DIRECTORIES)
 target_include_directories(rainbow PUBLIC "${RED_INCLUDES} ${ORANGE_INCLUDES} ${BRIDGE_INCLUDES}")
+
+add_dependencies(rainbow clangformat)
