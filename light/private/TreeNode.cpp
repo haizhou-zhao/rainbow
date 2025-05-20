@@ -35,17 +35,17 @@ RuleExecResult TreeNode::resolveRulesDownWithPruning(
         auto result = rule->apply(currentNode);
         resolvedNode = result.afterRule;
         changed = result.bChanged;
-        std::for_each(children.begin(), children.end(), [&](const std::shared_ptr<TreeNode>& child) {
-            auto childResult = child->resolveRulesDownWithPruning(shouldPrune, rule);
+        for (auto i = children.begin(); i != children.end(); ++i) {
+            auto childResult = (*i)->resolveRulesDownWithPruning(shouldPrune, rule);
             childResult.afterRule->parent = resolvedNode;
-            resolvedNode->children.push_back(childResult.afterRule);
+            (*i) = childResult.afterRule;
             if (!changed) changed = childResult.bChanged;
-        });
+        }
     } else {
         resolvedNode = currentNode;
     }
     if (!changed) {
         markIneffective(rule);
     }
-    return RuleExecResult(currentNode, changed);
+    return RuleExecResult(resolvedNode, changed);
 }

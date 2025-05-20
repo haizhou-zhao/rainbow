@@ -21,11 +21,21 @@ bool ResolvedIdentifier::nodeEquals(const TreeNode& other) const {
 bool CreateTable::nodeEquals(const TreeNode& other) const {
     const CreateTable* o = dynamic_cast<const CreateTable*>(&other);
     if (o) {
-        return *name == *(o->name) &&
+        return *(name()) == *(o->name()) &&
             // TODO: columns == o->columns &&
             bIfNotExist == o->bIfNotExist;
 
     } else {
         return false;
     }
+}
+
+void CreateTable::run() const
+{
+    
+}
+
+std::shared_ptr<Identifier> CreateTable::name() const
+{
+    return std::static_pointer_cast<Identifier>(children[0]);
 }

@@ -10,8 +10,8 @@ private:
     static std::string DEFAULT_DATABASE;
 
 public:
-    virtual void createTable(std::shared_ptr<ResolvedIdentifier> identifier) override;
+    virtual void createTable(const std::string& database, const std::string& table) override;
+
+    virtual bool tableExists(const std::string& database, const std::string& table) override;
 
 };
-
-std::string InMemoryCatalog::DEFAULT_DATABASE = "default";

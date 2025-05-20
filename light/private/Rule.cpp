@@ -14,7 +14,7 @@ RuleExecResult ResolveCatalogs::apply(std::shared_ptr<TreeNode> plan) const
         } else {
             size_t numParts = identifier->nameParts.size();
             if (numParts == 1) {
-                resolved = std::shared_ptr<ResolvedIdentifier>(new ResolvedIdentifier());
+                resolved = std::make_shared<ResolvedIdentifier>();
                 resolved->catalogName = "default";
                 std::swap(resolved->nameParts, identifier->nameParts);
                 return RuleExecResult(resolved, true);

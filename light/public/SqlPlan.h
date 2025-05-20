@@ -41,15 +41,18 @@ struct ResolvedIdentifier : public Identifier
 
 struct CreateTable : public TreeNode
 {
-    std::shared_ptr<Identifier> name;
     std::vector<ColumnDef> columns;
     // std::vector<Transform> partitioning;
     // TableSpec tableSpec;
     bool bIfNotExist;
 
-    CreateTable() : name(new Identifier()) {
-        children.push_back(name);
+    CreateTable() {
+        children.push_back(std::make_shared<Identifier>());
     }
 
     bool nodeEquals(const TreeNode& other) const override;
+
+    void run() const;
+
+    std::shared_ptr<Identifier> name() const;
 };
