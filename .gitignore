@@ -3,6 +3,9 @@ build/
 cmake-build-*/
 out/
 
+# Python venv
+venv/
+
 # Executables
 *.exe
 *.out
