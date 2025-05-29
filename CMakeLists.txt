@@ -2,6 +2,7 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.7 FATAL_ERROR)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 project(rainbow)
 
@@ -15,8 +16,9 @@ project(rainbow)
 find_program(CLANG_FORMAT clang-format REQUIRED)
 
 file(GLOB_RECURSE CXX_SOURCES 
-    "*.h"
-    ".cpp"
+    "**/public/*.h"
+    "**/private/*.cpp"
+    "**/test/*.cpp"
 )
 
 add_custom_target(clangformat
@@ -25,6 +27,15 @@ add_custom_target(clangformat
     COMMENT "Formatting code with clang-format"
     VERBATIM
 )
+
+enable_testing()
+
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
+)
+FetchContent_MakeAvailable(googletest)
 
 # project light includes many common utilities and internal data structure
 # which is a common dependencies of the rest of sub-modules

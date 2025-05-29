@@ -1,9 +1,5 @@
 #include "Analyzer.h"
 
-Analyzer::Analyzer(/* args */)
-{
-}
+Analyzer::Analyzer(/* args */) {}
 
-Analyzer::~Analyzer()
-{
-}
+Analyzer::~Analyzer() {}

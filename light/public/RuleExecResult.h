@@ -5,8 +5,8 @@ class TreeNode;
 
 struct RuleExecResult {
   std::shared_ptr<TreeNode> afterRule;
-  bool bChanged;
+  bool bModified;
 
   RuleExecResult(std::shared_ptr<TreeNode> _afterRule, bool _bChanged)
-      : afterRule(_afterRule), bChanged(_bChanged) {}
+      : afterRule(_afterRule), bModified(_bChanged) {}
 };
