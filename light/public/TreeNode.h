@@ -21,7 +21,7 @@ public:
   std::shared_ptr<TreeNode> parent;
   std::vector<std::shared_ptr<TreeNode>> children;
 
-  virtual bool nodeEquals(const TreeNode &other) const = 0;
+  virtual bool nodeEquals(const TreeNode &other) const;
 
   bool operator==(const TreeNode &other) const;
 
