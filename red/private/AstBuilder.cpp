@@ -5,6 +5,28 @@ AstBuilder::AstBuilder() {}
 
 AstBuilder::~AstBuilder() {}
 
+void AstBuilder::stripSingleQuotes(std::string &s) const {
+  if (s.length() >= 2) {
+    if (s.front() == '\'') {
+      s.erase(0, 1);
+    }
+    if (s.back() == '\'') {
+      s.pop_back();
+    }
+  }
+}
+
+void AstBuilder::stripDoubleQuotes(std::string &s) const {
+  if (s.length() >= 2) {
+    if (s.front() == '"') {
+      s.erase(0, 1);
+    }
+    if (s.back() == '"') {
+      s.pop_back();
+    }
+  }
+}
+
 std::any AstBuilder::visitCompoundOrSingleStatement(
     SqlBaseParser::CompoundOrSingleStatementContext *context) {
   // TODO compound stmt
@@ -252,7 +274,12 @@ AstBuilder::visitAnalyzeTables(SqlBaseParser::AnalyzeTablesContext *context) {
 
 std::any AstBuilder::visitAddTableColumns(
     SqlBaseParser::AddTableColumnsContext *context) {
-  return std::any();
+  std::shared_ptr<AddColumns> plan = std::make_shared<AddColumns>();
+  plan->tableName = std::any_cast<std::shared_ptr<Identifier>>(
+      context->identifierReference()->accept(this));
+  plan->columnsToAdd =
+      std::any_cast<std::vector<ColumnDef>>(context->columns->accept(this));
+  return plan;
 }
 
 std::any AstBuilder::visitRenameTableColumn(
@@ -864,7 +891,10 @@ AstBuilder::visitMergeIntoTable(SqlBaseParser::MergeIntoTableContext *context) {
 
 std::any AstBuilder::visitIdentifierReference(
     SqlBaseParser::IdentifierReferenceContext *context) {
-  return std::any();
+  std::shared_ptr<Identifier> identifier = std::make_shared<Identifier>();
+  identifier->nameParts = std::any_cast<std::vector<std::string>>(
+      context->multipartIdentifier()->accept(this));
+  return identifier;
 }
 
 std::any AstBuilder::visitCatalogIdentifierReference(
@@ -1299,7 +1329,14 @@ std::any AstBuilder::visitMultipartIdentifierList(
 
 std::any AstBuilder::visitMultipartIdentifier(
     SqlBaseParser::MultipartIdentifierContext *context) {
-  return std::any();
+  std::vector<std::string> parts;
+  auto errorCapturingIdentifiers = context->errorCapturingIdentifier();
+  std::transform(errorCapturingIdentifiers.begin(),
+                 errorCapturingIdentifiers.end(), std::back_inserter(parts),
+                 [this](SqlBaseParser::ErrorCapturingIdentifierContext *part) {
+                   return std::any_cast<std::string>(part->accept(this));
+                 });
+  return parts;
 }
 
 std::any AstBuilder::visitMultipartIdentifierPropertyList(
@@ -1364,7 +1401,7 @@ std::any AstBuilder::visitTransformArgument(
 
 std::any
 AstBuilder::visitExpression(SqlBaseParser::ExpressionContext *context) {
-  return std::any();
+  return context->getText();
 }
 
 std::any AstBuilder::visitNamedArgumentExpression(
@@ -1672,7 +1709,7 @@ std::any AstBuilder::visitUnitInUnitToUnit(
 
 std::any
 AstBuilder::visitColPosition(SqlBaseParser::ColPositionContext *context) {
-  return std::any();
+  return static_cast<std::size_t>(std::stoull(context->position->getText()));
 }
 
 std::any
@@ -1718,12 +1755,45 @@ std::any AstBuilder::visitPrimitiveDataType(
 
 std::any AstBuilder::visitQualifiedColTypeWithPositionList(
     SqlBaseParser::QualifiedColTypeWithPositionListContext *context) {
-  return std::any();
+  std::vector<ColumnDef> colDefs;
+  auto colTypeWithPosition = context->qualifiedColTypeWithPosition();
+  colDefs.reserve(colTypeWithPosition.size());
+  std::transform(
+      colTypeWithPosition.begin(), colTypeWithPosition.end(),
+      std::back_inserter(colDefs),
+      [this](SqlBaseParser::QualifiedColTypeWithPositionContext *ctx) {
+        return std::any_cast<ColumnDef>(visitQualifiedColTypeWithPosition(ctx));
+      });
+  return colDefs;
 }
 
 std::any AstBuilder::visitQualifiedColTypeWithPosition(
     SqlBaseParser::QualifiedColTypeWithPositionContext *context) {
-  return std::any();
+  ColumnDef colDef;
+  auto nameParts = std::any_cast<std::vector<std::string>>(
+      context->multipartIdentifier()->accept(this));
+  colDef.name = nameParts.empty() ? "" : nameParts.front();
+  colDef.dataType.typeName = context->dataType()->getText();
+  for (const auto &colDefDescriptor :
+       context->colDefinitionDescriptorWithPosition()) {
+    if (colDefDescriptor->errorCapturingNot() && colDefDescriptor->NULL_()) {
+      // Handle NOT NULL case
+      colDef.bNullable = false;
+    } else if (colDefDescriptor->commentSpec()) {
+      // Handle comment specification
+      colDef.comment = std::any_cast<std::string>(
+          visitCommentSpec(colDefDescriptor->commentSpec()));
+    } else if (colDefDescriptor->defaultExpression()) {
+      // Handle default expression
+      colDef.defaultExpr = std::any_cast<std::string>(
+          visitDefaultExpression(colDefDescriptor->defaultExpression()));
+    } else if (colDefDescriptor->colPosition()) {
+      // Handle column position
+      colDef.position = std::any_cast<std::size_t>(
+          visitColPosition(colDefDescriptor->colPosition()));
+    }
+  }
+  return colDef;
 }
 
 std::any AstBuilder::visitColDefinitionDescriptorWithPosition(
@@ -1733,7 +1803,7 @@ std::any AstBuilder::visitColDefinitionDescriptorWithPosition(
 
 std::any AstBuilder::visitDefaultExpression(
     SqlBaseParser::DefaultExpressionContext *context) {
-  return std::any();
+  return context->expression()->accept(this);
 }
 
 std::any AstBuilder::visitVariableDefaultExpression(
@@ -1927,7 +1997,7 @@ AstBuilder::visitQualifiedName(SqlBaseParser::QualifiedNameContext *context) {
 
 std::any AstBuilder::visitErrorCapturingIdentifier(
     SqlBaseParser::ErrorCapturingIdentifierContext *context) {
-  return std::any();
+  return context->identifier()->accept(this);
 }
 
 std::any
@@ -1941,7 +2011,7 @@ std::any AstBuilder::visitRealIdent(SqlBaseParser::RealIdentContext *context) {
 
 std::any
 AstBuilder::visitIdentifier(SqlBaseParser::IdentifierContext *context) {
-  return std::any();
+  return context->getText();
 }
 
 std::any AstBuilder::visitUnquotedIdentifier(
@@ -2092,9 +2162,13 @@ std::any AstBuilder::visitAlterColumnAction(
 std::any AstBuilder::visitStringLit(SqlBaseParser::StringLitContext *context) {
   if (context) {
     if (context->STRING_LITERAL()) {
-      return context->STRING_LITERAL()->getSymbol()->getText();
+      auto text = context->STRING_LITERAL()->getSymbol()->getText();
+      stripSingleQuotes(text);
+      return text;
     } else {
-      return context->DOUBLEQUOTED_STRING()->getSymbol()->getText();
+      auto text = context->DOUBLEQUOTED_STRING()->getSymbol()->getText();
+      stripDoubleQuotes(text);
+      return text;
     }
   } else {
     return std::string();

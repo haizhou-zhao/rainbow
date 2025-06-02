@@ -19,6 +19,10 @@ private:
     // std::vector<TableConstraint> tableConstraint;
   };
 
+  void stripSingleQuotes(std::string &s) const;
+
+  void stripDoubleQuotes(std::string &s) const;
+
 public:
   AstBuilder(/* args */);
   ~AstBuilder();
