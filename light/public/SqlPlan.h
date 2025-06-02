@@ -12,9 +12,10 @@ struct DataType {
 struct ColumnDef {
   std::string name;
   DataType dataType;
-  bool bNullable;
+  bool bNullable = true; // default is nullable, unless specified as NOT NULL
   std::string comment;
-  // DefaultValueExpression defaultValue;
+  std::string defaultExpr;
+  std::size_t position;
   // std::string generationExpression;
   // IdentityColumnSpec identityColumnSpec;
   // Metadata metadata;
@@ -35,6 +36,9 @@ struct ResolvedIdentifier : public Identifier {
   bool nodeEquals(const TreeNode &other) const override;
 };
 
+/**
+ * CREATE TABLE ...
+ */
 struct CreateTable : public TreeNode {
   std::vector<ColumnDef> columns;
   // std::vector<Transform> partitioning;
@@ -48,4 +52,12 @@ struct CreateTable : public TreeNode {
   void run() const;
 
   std::shared_ptr<Identifier> name() const;
+};
+
+/**
+ * ALTER TABLE ... ADD COLUMNS
+ */
+struct AddColumns : public TreeNode {
+  std::shared_ptr<Identifier> tableName;
+  std::vector<ColumnDef> columnsToAdd;
 };

@@ -45,5 +45,20 @@ int main(int , const char **) {
 
   assert(sqlCtx.catalogManager->currentCatalog()->tableExists("", "my_tbl1"));
 
+  ANTLRInputStream input2("ALTER TABLE my_tbl1 ADD COLUMNS (event_time TIMESTAMP)");
+  SqlBaseLexer lexer2(&input2);
+  CommonTokenStream tokens2(&lexer2);
+  SqlBaseParser parser2(&tokens2);
+  SqlBaseParser::CompoundOrSingleStatementContext* parsed2 = parser2.compoundOrSingleStatement();
+  std::cout << parsed2->toStringTree() << std::endl;
+  std::shared_ptr<AddColumns> plan2 = std::any_cast<std::shared_ptr<AddColumns>>(AstBuilder().visitCompoundOrSingleStatement(parsed2));
+  
+  assert(plan2->tableName->nameParts.size() == 1);
+  assert(plan2->tableName->nameParts[0] == "my_tbl1");
+  assert(plan2->columnsToAdd.size() == 1);
+  assert(plan2->columnsToAdd[0].name == "event_time");
+  assert(plan2->columnsToAdd[0].dataType.typeName == "TIMESTAMP");
+  assert(plan2->columnsToAdd[0].bNullable == true);
+
   return 0;
 }
