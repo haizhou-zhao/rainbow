@@ -150,3 +150,86 @@ TEST(CreateTableTest, NameFailsIfChildIsNotIdentifier) {
 
   ASSERT_EQ(result, nullptr);
 }
+
+TEST(AddColumnsTest, EqualsWithSameFields) {
+  AddColumns ac1;
+  ac1.tableName()->nameParts = {"db", "table"};
+  ac1.columnsToAdd = {
+      {"col1", {"INT"}, true, "comment1", "defaultExpr1", 0},
+      {"col2", {"STRING"}, true, "comment2", "defaultExpr2", 1}};
+
+  AddColumns ac2;
+  ac2.tableName()->nameParts = {"db", "table"};
+  ac2.columnsToAdd = {
+      {"col1", {"INT"}, true, "comment1", "defaultExpr1", 0},
+      {"col2", {"STRING"}, true, "comment2", "defaultExpr2", 1}};
+
+  EXPECT_TRUE(ac1.nodeEquals(ac2));
+}
+
+TEST(AddColumnsTest, NotEqualsDifferentName) {
+  AddColumns ac1;
+  ac1.tableName()->nameParts = {"db", "table1"};
+  ac1.columnsToAdd = {
+      {"col1", {"INT"}, true, "comment1", "defaultExpr1", 0},
+      {"col2", {"STRING"}, true, "comment2", "defaultExpr2", 1}};
+
+  AddColumns ac2;
+  ac2.tableName()->nameParts = {"db", "table2"};
+  ac2.columnsToAdd = {
+      {"col1", {"INT"}, true, "comment1", "defaultExpr1", 0},
+      {"col2", {"STRING"}, true, "comment2", "defaultExpr2", 1}};
+
+  EXPECT_FALSE(ac1.nodeEquals(ac2));
+}
+
+TEST(AddColumnsTest, NotEqualsDifferentIfNotExistFlag) {
+  AddColumns ac1;
+  ac1.tableName()->nameParts = {"db", "table"};
+  ac1.columnsToAdd = {
+      {"col1", {"INT"}, true, "comment1", "defaultExpr1", 0},
+      {"col2", {"STRING"}, true, "comment2", "defaultExpr2", 1}};
+
+  AddColumns ac2;
+  ac2.tableName()->nameParts = {"db", "table"};
+  ac2.columnsToAdd = {{"col1", {"INT"}, true, "comment1", "defaultExpr1", 0},
+                      {"col2", {"LONG"}, true, "comment2", "defaultExpr2", 1}};
+
+  EXPECT_FALSE(ac1.nodeEquals(ac2));
+}
+
+TEST(AddColumnsTest, NotEqualsDifferentType) {
+  struct DummyNode : public TreeNode {};
+  DummyNode dummy;
+
+  AddColumns ac;
+  ac.tableName()->nameParts = {"db", "table"};
+  ac.columnsToAdd = {{"col1", {"INT"}, true, "comment1", "defaultExpr1", 0},
+                     {"col2", {"STRING"}, true, "comment2", "defaultExpr2", 1}};
+
+  EXPECT_FALSE(ac.nodeEquals(dummy));
+}
+
+TEST(AddColumnsTest, NameReturnsFirstChildAsIdentifier) {
+  AddColumns ac;
+  std::static_pointer_cast<Identifier>(ac.children[0])->nameParts = {
+      "my_table"};
+
+  std::shared_ptr<Identifier> result = ac.tableName();
+
+  ASSERT_NE(result, nullptr);
+  EXPECT_EQ(result->nameParts.size(), 1);
+  EXPECT_EQ(result->nameParts[0], "my_table");
+}
+
+TEST(AddColumnsTest, NameFailsIfChildIsNotIdentifier) {
+  struct DummyNode : public TreeNode {};
+  auto dummy = std::make_shared<DummyNode>();
+
+  AddColumns ac;
+  ac.children[0] = dummy;
+
+  std::shared_ptr<Identifier> result = ac.tableName();
+
+  ASSERT_EQ(result, nullptr);
+}

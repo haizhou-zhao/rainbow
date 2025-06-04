@@ -275,7 +275,7 @@ AstBuilder::visitAnalyzeTables(SqlBaseParser::AnalyzeTablesContext *context) {
 std::any AstBuilder::visitAddTableColumns(
     SqlBaseParser::AddTableColumnsContext *context) {
   std::shared_ptr<AddColumns> plan = std::make_shared<AddColumns>();
-  plan->tableName = std::any_cast<std::shared_ptr<Identifier>>(
+  plan->tableName()->nameParts = std::any_cast<std::vector<std::string>>(
       context->identifierReference()->accept(this));
   plan->columnsToAdd =
       std::any_cast<std::vector<ColumnDef>>(context->columns->accept(this));
@@ -891,10 +891,7 @@ AstBuilder::visitMergeIntoTable(SqlBaseParser::MergeIntoTableContext *context) {
 
 std::any AstBuilder::visitIdentifierReference(
     SqlBaseParser::IdentifierReferenceContext *context) {
-  std::shared_ptr<Identifier> identifier = std::make_shared<Identifier>();
-  identifier->nameParts = std::any_cast<std::vector<std::string>>(
-      context->multipartIdentifier()->accept(this));
-  return identifier;
+  return context->multipartIdentifier()->accept(this);
 }
 
 std::any AstBuilder::visitCatalogIdentifierReference(

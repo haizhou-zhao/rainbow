@@ -19,6 +19,12 @@ struct ColumnDef {
   // std::string generationExpression;
   // IdentityColumnSpec identityColumnSpec;
   // Metadata metadata;
+
+  bool operator==(const ColumnDef &other) const {
+    return name == other.name && dataType.typeName == other.dataType.typeName &&
+           bNullable == other.bNullable && comment == other.comment &&
+           defaultExpr == other.defaultExpr && position == other.position;
+  }
 };
 
 /**
@@ -58,6 +64,10 @@ struct CreateTable : public TreeNode {
  * ALTER TABLE ... ADD COLUMNS
  */
 struct AddColumns : public TreeNode {
-  std::shared_ptr<Identifier> tableName;
   std::vector<ColumnDef> columnsToAdd;
+
+  AddColumns() { children.push_back(std::make_shared<Identifier>()); }
+  bool nodeEquals(const TreeNode &other) const override;
+  void run() const;
+  std::shared_ptr<Identifier> tableName() const;
 };
