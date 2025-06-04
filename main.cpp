@@ -52,9 +52,11 @@ int main(int , const char **) {
   SqlBaseParser::CompoundOrSingleStatementContext* parsed2 = parser2.compoundOrSingleStatement();
   std::cout << parsed2->toStringTree() << std::endl;
   std::shared_ptr<AddColumns> plan2 = std::any_cast<std::shared_ptr<AddColumns>>(AstBuilder().visitCompoundOrSingleStatement(parsed2));
+  auto result2 = plan2->resolveRulesDownWithPruning([](const TreeNode* n){ return false; }, &r);
+  std::shared_ptr<ResolvedIdentifier> identifier2 = std::static_pointer_cast<ResolvedIdentifier>(std::static_pointer_cast<AddColumns>(result2.afterRule)->tableName());
   
-  assert(plan2->tableName->nameParts.size() == 1);
-  assert(plan2->tableName->nameParts[0] == "my_tbl1");
+  assert(plan2->tableName()->nameParts.size() == 1);
+  assert(plan2->tableName()->nameParts[0] == "my_tbl1");
   assert(plan2->columnsToAdd.size() == 1);
   assert(plan2->columnsToAdd[0].name == "event_time");
   assert(plan2->columnsToAdd[0].dataType.typeName == "TIMESTAMP");

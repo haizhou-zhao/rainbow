@@ -35,3 +35,19 @@ void CreateTable::run() const {}
 std::shared_ptr<Identifier> CreateTable::name() const {
   return std::dynamic_pointer_cast<Identifier>(children[0]);
 }
+
+bool AddColumns::nodeEquals(const TreeNode &other) const {
+  const AddColumns *o = dynamic_cast<const AddColumns *>(&other);
+  if (o) {
+    return *(tableName()) == *(o->tableName()) &&
+           columnsToAdd == o->columnsToAdd;
+  } else {
+    return false;
+  }
+}
+
+void AddColumns::run() const {}
+
+std::shared_ptr<Identifier> AddColumns::tableName() const {
+  return std::dynamic_pointer_cast<Identifier>(children[0]);
+}

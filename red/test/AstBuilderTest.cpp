@@ -60,8 +60,8 @@ TEST(AstBuilderTest, AlterTableAddColumns) {
   std::shared_ptr<AddColumns> plan = std::any_cast<std::shared_ptr<AddColumns>>(
       AstBuilder().visitCompoundOrSingleStatement(parsed));
 
-  ASSERT_EQ(plan->tableName->nameParts.size(), 1);
-  ASSERT_EQ(plan->tableName->nameParts[0], "my_tbl1");
+  ASSERT_EQ(plan->tableName()->nameParts.size(), 1);
+  ASSERT_EQ(plan->tableName()->nameParts[0], "my_tbl1");
   ASSERT_EQ(plan->columnsToAdd.size(), 1);
   ASSERT_EQ(plan->columnsToAdd[0].name, "event_time");
   ASSERT_EQ(plan->columnsToAdd[0].dataType.typeName, "TIMESTAMP");
@@ -81,8 +81,8 @@ TEST(AstBuilderTest, AlterTableAddColumnsWithCommentInSingleQuote) {
   std::shared_ptr<AddColumns> plan = std::any_cast<std::shared_ptr<AddColumns>>(
       AstBuilder().visitCompoundOrSingleStatement(parsed));
 
-  ASSERT_EQ(plan->tableName->nameParts.size(), 1);
-  ASSERT_EQ(plan->tableName->nameParts[0], "my_tbl1");
+  ASSERT_EQ(plan->tableName()->nameParts.size(), 1);
+  ASSERT_EQ(plan->tableName()->nameParts[0], "my_tbl1");
   ASSERT_EQ(plan->columnsToAdd.size(), 1);
   ASSERT_EQ(plan->columnsToAdd[0].name, "event_time");
   ASSERT_EQ(plan->columnsToAdd[0].dataType.typeName, "TIMESTAMP");
@@ -102,8 +102,8 @@ TEST(AstBuilderTest, AlterTableAddColumnsWithCommentInDoubleQuote) {
   std::shared_ptr<AddColumns> plan = std::any_cast<std::shared_ptr<AddColumns>>(
       AstBuilder().visitCompoundOrSingleStatement(parsed));
 
-  ASSERT_EQ(plan->tableName->nameParts.size(), 1);
-  ASSERT_EQ(plan->tableName->nameParts[0], "my_tbl1");
+  ASSERT_EQ(plan->tableName()->nameParts.size(), 1);
+  ASSERT_EQ(plan->tableName()->nameParts[0], "my_tbl1");
   ASSERT_EQ(plan->columnsToAdd.size(), 1);
   ASSERT_EQ(plan->columnsToAdd[0].name, "event_time");
   ASSERT_EQ(plan->columnsToAdd[0].dataType.typeName, "TIMESTAMP");
@@ -123,8 +123,8 @@ TEST(AstBuilderTest, AlterTableAddColumnsWithNOTNULL) {
   std::shared_ptr<AddColumns> plan = std::any_cast<std::shared_ptr<AddColumns>>(
       AstBuilder().visitCompoundOrSingleStatement(parsed));
 
-  ASSERT_EQ(plan->tableName->nameParts.size(), 1);
-  ASSERT_EQ(plan->tableName->nameParts[0], "my_tbl1");
+  ASSERT_EQ(plan->tableName()->nameParts.size(), 1);
+  ASSERT_EQ(plan->tableName()->nameParts[0], "my_tbl1");
   ASSERT_EQ(plan->columnsToAdd.size(), 1);
   ASSERT_EQ(plan->columnsToAdd[0].name, "event_time");
   ASSERT_EQ(plan->columnsToAdd[0].dataType.typeName, "TIMESTAMP");
@@ -144,8 +144,8 @@ TEST(AstBuilderTest, AlterTableAddColumnsWithDefaultExpr) {
   std::shared_ptr<AddColumns> plan = std::any_cast<std::shared_ptr<AddColumns>>(
       AstBuilder().visitCompoundOrSingleStatement(parsed));
 
-  ASSERT_EQ(plan->tableName->nameParts.size(), 1);
-  ASSERT_EQ(plan->tableName->nameParts[0], "my_tbl1");
+  ASSERT_EQ(plan->tableName()->nameParts.size(), 1);
+  ASSERT_EQ(plan->tableName()->nameParts[0], "my_tbl1");
   ASSERT_EQ(plan->columnsToAdd.size(), 1);
   ASSERT_EQ(plan->columnsToAdd[0].name, "event_time");
   ASSERT_EQ(plan->columnsToAdd[0].dataType.typeName, "TIMESTAMP");
@@ -166,8 +166,8 @@ TEST(AstBuilderTest, AlterTableAddColumnsWithAllDescriptors) {
   std::shared_ptr<AddColumns> plan = std::any_cast<std::shared_ptr<AddColumns>>(
       AstBuilder().visitCompoundOrSingleStatement(parsed));
 
-  ASSERT_EQ(plan->tableName->nameParts.size(), 1);
-  ASSERT_EQ(plan->tableName->nameParts[0], "my_tbl1");
+  ASSERT_EQ(plan->tableName()->nameParts.size(), 1);
+  ASSERT_EQ(plan->tableName()->nameParts[0], "my_tbl1");
   ASSERT_EQ(plan->columnsToAdd.size(), 1);
   ASSERT_EQ(plan->columnsToAdd[0].name, "event_time");
   ASSERT_EQ(plan->columnsToAdd[0].dataType.typeName, "TIMESTAMP");
