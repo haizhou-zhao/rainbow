@@ -1,4 +1,7 @@
 #include "SqlPlan.h"
+#include "Catalog.h"
+#include "InMemoryCatalog.h"
+#include "SqlContext.h"
 #include <gtest/gtest.h>
 
 TEST(IdentifierTest, NodeEquals_SameParts) {
@@ -149,6 +152,105 @@ TEST(CreateTableTest, NameFailsIfChildIsNotIdentifier) {
   std::shared_ptr<Identifier> result = createTable.name();
 
   ASSERT_EQ(result, nullptr);
+}
+
+TEST(CreateTableTest, RunCreatesTableWithResolvedIdentifier) {
+  auto createTable = std::make_shared<CreateTable>();
+  auto identifier = std::make_shared<ResolvedIdentifier>();
+  createTable->children[0] = identifier;
+  identifier->nameParts = {"test_db", "users"};
+  identifier->catalogName = "catalog1";
+  createTable->bIfNotExist = false;
+  createTable->columns = {
+      {"col1", {"INT"}, true, "comment1", "defaultExpr1", 0},
+      {"col2", {"STRING"}, true, "comment2", "defaultExpr2", 1}};
+
+  SqlContext sqlCtx;
+  CatalogManager catalogManager;
+  sqlCtx.currentCatalogName = "defaultCatalog";
+  sqlCtx.currentDatabaseName = {"defaultDatabase"};
+  catalogManager.addCatalog("defaultCatalog",
+                            std::make_shared<InMemoryCatalog>());
+  catalogManager.addCatalog("catalog1", std::make_shared<InMemoryCatalog>());
+  sqlCtx.catalogManager = &catalogManager;
+
+  createTable->run(&sqlCtx);
+
+  ASSERT_TRUE(sqlCtx.catalogManager->catalog("catalog1")
+                  ->tableExists("test_db", "users"));
+}
+
+TEST(CreateTableTest, RunCreatesTableWithUnresolvedIdentifier) {
+  auto createTable = std::make_shared<CreateTable>();
+  createTable->name()->nameParts = {"test_db", "users"};
+  createTable->bIfNotExist = false;
+  createTable->columns = {
+      {"col1", {"INT"}, true, "comment1", "defaultExpr1", 0},
+      {"col2", {"STRING"}, true, "comment2", "defaultExpr2", 1}};
+
+  SqlContext sqlCtx;
+  CatalogManager catalogManager;
+  sqlCtx.currentCatalogName = "defaultCatalog";
+  sqlCtx.currentDatabaseName = {"defaultDatabase"};
+  catalogManager.addCatalog("defaultCatalog",
+                            std::make_shared<InMemoryCatalog>());
+  catalogManager.addCatalog("catalog1", std::make_shared<InMemoryCatalog>());
+  sqlCtx.catalogManager = &catalogManager;
+
+  createTable->run(&sqlCtx);
+
+  ASSERT_FALSE(sqlCtx.catalogManager->catalog("catalog1")
+                   ->tableExists("test_db", "users"));
+}
+
+TEST(CreateTableTest, RunCreatesTableWithAlreadyExistingTable) {
+  auto createTable = std::make_shared<CreateTable>();
+  auto identifier = std::make_shared<ResolvedIdentifier>();
+  createTable->children[0] = identifier;
+  identifier->nameParts = {"test_db", "users"};
+  identifier->catalogName = "catalog1";
+  createTable->bIfNotExist = false;
+  createTable->columns = {
+      {"col1", {"INT"}, true, "comment1", "defaultExpr1", 0},
+      {"col2", {"STRING"}, true, "comment2", "defaultExpr2", 1}};
+
+  SqlContext sqlCtx;
+  CatalogManager catalogManager;
+  sqlCtx.currentCatalogName = "defaultCatalog";
+  sqlCtx.currentDatabaseName = {"defaultDatabase"};
+  catalogManager.addCatalog("defaultCatalog",
+                            std::make_shared<InMemoryCatalog>());
+  catalogManager.addCatalog("catalog1", std::make_shared<InMemoryCatalog>());
+  sqlCtx.catalogManager = &catalogManager;
+  catalogManager.catalog("catalog1")
+      ->createTable("test_db", "users"); // Pre-create the table
+
+  ASSERT_THROW(createTable->run(&sqlCtx), std::runtime_error);
+}
+
+TEST(CreateTableTest, RunCreatesTableWithAlreadyExistingTableIfNotExist) {
+  auto createTable = std::make_shared<CreateTable>();
+  auto identifier = std::make_shared<ResolvedIdentifier>();
+  createTable->children[0] = identifier;
+  identifier->nameParts = {"test_db", "users"};
+  identifier->catalogName = "catalog1";
+  createTable->bIfNotExist = true;
+  createTable->columns = {
+      {"col1", {"INT"}, true, "comment1", "defaultExpr1", 0},
+      {"col2", {"STRING"}, true, "comment2", "defaultExpr2", 1}};
+
+  SqlContext sqlCtx;
+  CatalogManager catalogManager;
+  sqlCtx.currentCatalogName = "defaultCatalog";
+  sqlCtx.currentDatabaseName = {"defaultDatabase"};
+  catalogManager.addCatalog("defaultCatalog",
+                            std::make_shared<InMemoryCatalog>());
+  catalogManager.addCatalog("catalog1", std::make_shared<InMemoryCatalog>());
+  sqlCtx.catalogManager = &catalogManager;
+  catalogManager.catalog("catalog1")
+      ->createTable("test_db", "users"); // Pre-create the table
+
+  createTable->run(&sqlCtx);
 }
 
 TEST(AddColumnsTest, EqualsWithSameFields) {

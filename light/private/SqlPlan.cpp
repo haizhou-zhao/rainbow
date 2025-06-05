@@ -1,4 +1,7 @@
 #include "SqlPlan.h"
+#include "Catalog.h"
+#include "SqlContext.h"
+#include <stdexcept>
 
 bool Identifier::nodeEquals(const TreeNode &other) const {
   const Identifier *o = dynamic_cast<const Identifier *>(&other);
@@ -30,7 +33,21 @@ bool CreateTable::nodeEquals(const TreeNode &other) const {
   }
 }
 
-void CreateTable::run() const {}
+void CreateTable::run(const SqlContext *sqlCtx) const {
+  std::shared_ptr<ResolvedIdentifier> identifier =
+      std::dynamic_pointer_cast<ResolvedIdentifier>(name());
+  if (identifier) {
+    if (!sqlCtx->catalogManager->catalog(identifier->catalogName)
+             ->tableExists(identifier->databaseName(),
+                           identifier->tableName())) {
+      sqlCtx->catalogManager->catalog(identifier->catalogName)
+          ->createTable(identifier->databaseName(), identifier->tableName());
+    } else if (!bIfNotExist) {
+      throw std::runtime_error("Table already exists: " +
+                               identifier->fullName());
+    }
+  }
+}
 
 std::shared_ptr<Identifier> CreateTable::name() const {
   return std::dynamic_pointer_cast<Identifier>(children[0]);
