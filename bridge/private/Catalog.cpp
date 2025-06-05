@@ -1,16 +1,19 @@
 #include "Catalog.h"
 #include "InMemoryCatalog.h"
+#include <stdexcept>
 
-std::shared_ptr<Catalog> CatalogManager::CURRENT_CATALOG = nullptr;
-
-std::shared_ptr<Catalog> CatalogManager::currentCatalog() {
-  if (CURRENT_CATALOG == nullptr) {
-    CURRENT_CATALOG = std::make_shared<InMemoryCatalog>();
+void CatalogManager::addCatalog(std::string catalogName,
+                                std::shared_ptr<Catalog> catalog) {
+  if (catalogs.find(catalogName) != catalogs.end()) {
+    throw std::runtime_error("Catalog with name '" + catalogName +
+                             "' already exists.");
   }
-  return CURRENT_CATALOG;
+  catalogs[catalogName] = catalog;
 }
 
 std::shared_ptr<Catalog> CatalogManager::catalog(std::string catalogName) {
-  // Only manage 1 catalog
-  return currentCatalog();
+  if (catalogs.find(catalogName) != catalogs.end()) {
+    return catalogs[catalogName];
+  }
+  return nullptr;
 }

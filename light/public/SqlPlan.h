@@ -2,8 +2,11 @@
 
 #include "TreeNode.h"
 #include <memory>
+#include <numeric>
 #include <string>
 #include <vector>
+
+struct SqlContext; // Forward declaration
 
 struct DataType {
   std::string typeName;
@@ -40,6 +43,31 @@ struct ResolvedIdentifier : public Identifier {
   std::string catalogName;
 
   bool nodeEquals(const TreeNode &other) const override;
+
+  std::string fullName() const {
+    return std::accumulate(nameParts.begin(), nameParts.end(), catalogName,
+                           [](const std::string &a, const std::string &b) {
+                             return a.empty() ? b : a + "." + b;
+                           });
+  }
+
+  std::string databaseName() const {
+    std::string db;
+    if (nameParts.size() > 1) {
+      db = std::accumulate(nameParts.begin(), nameParts.end() - 1, db,
+                           [](const std::string &a, const std::string &b) {
+                             return a.empty() ? b : a + "." + b;
+                           });
+    }
+    return db;
+  }
+
+  std::string tableName() const {
+    if (nameParts.size() > 0) {
+      return nameParts.back();
+    }
+    return "";
+  }
 };
 
 /**
@@ -55,7 +83,7 @@ struct CreateTable : public TreeNode {
 
   bool nodeEquals(const TreeNode &other) const override;
 
-  void run() const;
+  void run(const SqlContext *sqlCtx) const;
 
   std::shared_ptr<Identifier> name() const;
 };

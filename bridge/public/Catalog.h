@@ -1,8 +1,7 @@
 #pragma once
 #include <memory>
 #include <string>
-
-class ResolvedIdentifier;
+#include <unordered_map>
 
 class Catalog : public std::enable_shared_from_this<Catalog> {
 public:
@@ -15,10 +14,10 @@ public:
 
 class CatalogManager {
 private:
-  static std::shared_ptr<Catalog> CURRENT_CATALOG;
+  std::unordered_map<std::string, std::shared_ptr<Catalog>> catalogs;
 
 public:
-  std::shared_ptr<Catalog> currentCatalog();
+  void addCatalog(std::string catalogName, std::shared_ptr<Catalog> catalog);
 
   std::shared_ptr<Catalog> catalog(std::string catalogName);
 };

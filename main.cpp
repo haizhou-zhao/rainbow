@@ -5,6 +5,7 @@
 #include "SqlBaseParser.h"
 #include "AstBuilder.h"
 #include "Catalog.h"
+#include "InMemoryCatalog.h"
 #include "Rule.h"
 #include "SqlContext.h"
 #include "TreeNode.h"
@@ -16,6 +17,7 @@ using namespace antlr4;
 int main(int , const char **) {
   SqlContext sqlCtx;
   sqlCtx.catalogManager = new CatalogManager();
+  sqlCtx.catalogManager->addCatalog("default", std::make_shared<InMemoryCatalog>());
 
   ANTLRInputStream input("CREATE TABLE my_tbl1 (id INT, data STRING)");
   SqlBaseLexer lexer(&input);
@@ -27,23 +29,10 @@ int main(int , const char **) {
   std::cout << parsed->toStringTree() << std::endl;
   std::shared_ptr<CreateTable> plan = std::any_cast<std::shared_ptr<CreateTable>>(AstBuilder().visitCompoundOrSingleStatement(parsed));
   ResolveCatalogs r;
+  r.init(&sqlCtx);
   auto result = plan->resolveRulesDownWithPruning([](const TreeNode* n){ return false; }, &r);
-  
-
-  std::shared_ptr<ResolvedIdentifier> identifier = std::static_pointer_cast<ResolvedIdentifier>(std::static_pointer_cast<CreateTable>(result.afterRule)->name());
-  if (identifier != nullptr) {
-    std::string database;
-    std::string table;
-    if (identifier->nameParts.size() == 2) {
-      database = identifier->nameParts[0];
-      table = identifier->nameParts[1];
-    } else if (identifier->nameParts.size() == 1) {
-      table = identifier->nameParts[0];
-    }
-    sqlCtx.catalogManager->catalog(identifier->catalogName)->createTable(database, table);
-  }
-
-  assert(sqlCtx.catalogManager->currentCatalog()->tableExists("", "my_tbl1"));
+  (std::dynamic_pointer_cast<CreateTable>(result.afterRule))->run(&sqlCtx);
+  assert(sqlCtx.currentCatalog()->tableExists("default", "my_tbl1"));
 
   ANTLRInputStream input2("ALTER TABLE my_tbl1 ADD COLUMNS (event_time TIMESTAMP)");
   SqlBaseLexer lexer2(&input2);
@@ -55,8 +44,9 @@ int main(int , const char **) {
   auto result2 = plan2->resolveRulesDownWithPruning([](const TreeNode* n){ return false; }, &r);
   std::shared_ptr<ResolvedIdentifier> identifier2 = std::static_pointer_cast<ResolvedIdentifier>(std::static_pointer_cast<AddColumns>(result2.afterRule)->tableName());
   
-  assert(plan2->tableName()->nameParts.size() == 1);
-  assert(plan2->tableName()->nameParts[0] == "my_tbl1");
+  assert(plan2->tableName()->nameParts.size() == 2);
+  assert(plan2->tableName()->nameParts[0] == "default");
+  assert(plan2->tableName()->nameParts[1] == "my_tbl1");
   assert(plan2->columnsToAdd.size() == 1);
   assert(plan2->columnsToAdd[0].name == "event_time");
   assert(plan2->columnsToAdd[0].dataType.typeName == "TIMESTAMP");

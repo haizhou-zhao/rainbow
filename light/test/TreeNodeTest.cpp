@@ -10,6 +10,7 @@ public:
   explicit MockRule(const std::string &name = "MockRule") : Rule(name) {}
 
   // Mock the pure virtual method
+  MOCK_METHOD(void, init, (SqlContext * sqlCtx), (override));
   MOCK_METHOD(RuleExecResult, apply, (std::shared_ptr<TreeNode> plan),
               (const, override));
 };

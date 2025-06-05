@@ -8,7 +8,6 @@ class InMemoryCatalog : public Catalog {
 private:
   std::unordered_map<std::string, std::unordered_set<std::string>>
       catalogMemory;
-  static std::string DEFAULT_DATABASE;
 
 public:
   virtual void createTable(const std::string &database,
