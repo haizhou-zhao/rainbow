@@ -1,5 +1,6 @@
 #pragma once
 
+#include "DbEntities.h"
 #include "TreeNode.h"
 #include <memory>
 #include <numeric>
@@ -7,28 +8,6 @@
 #include <vector>
 
 struct SqlContext; // Forward declaration
-
-struct DataType {
-  std::string typeName;
-};
-
-struct ColumnDef {
-  std::string name;
-  DataType dataType;
-  bool bNullable = true; // default is nullable, unless specified as NOT NULL
-  std::string comment;
-  std::string defaultExpr;
-  std::size_t position;
-  // std::string generationExpression;
-  // IdentityColumnSpec identityColumnSpec;
-  // Metadata metadata;
-
-  bool operator==(const ColumnDef &other) const {
-    return name == other.name && dataType.typeName == other.dataType.typeName &&
-           bNullable == other.bNullable && comment == other.comment &&
-           defaultExpr == other.defaultExpr && position == other.position;
-  }
-};
 
 /**
  * Represents an (unresolved) identifier, but derivable
@@ -74,7 +53,7 @@ struct ResolvedIdentifier : public Identifier {
  * CREATE TABLE ...
  */
 struct CreateTable : public TreeNode {
-  std::vector<ColumnDef> columns;
+  std::vector<Column> columns;
   // std::vector<Transform> partitioning;
   // TableSpec tableSpec;
   bool bIfNotExist;
@@ -92,10 +71,10 @@ struct CreateTable : public TreeNode {
  * ALTER TABLE ... ADD COLUMNS
  */
 struct AddColumns : public TreeNode {
-  std::vector<ColumnDef> columnsToAdd;
+  std::vector<Column> columnsToAdd;
 
   AddColumns() { children.push_back(std::make_shared<Identifier>()); }
   bool nodeEquals(const TreeNode &other) const override;
-  void run() const;
+  void run(const SqlContext *sqlCtx) const;
   std::shared_ptr<Identifier> tableName() const;
 };

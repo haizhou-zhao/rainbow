@@ -15,7 +15,7 @@ private:
   };
 
   struct TableElements {
-    std::vector<ColumnDef> columnDef;
+    std::vector<Column> columnDef;
     // std::vector<TableConstraint> tableConstraint;
   };
 

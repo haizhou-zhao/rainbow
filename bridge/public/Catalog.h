@@ -3,13 +3,22 @@
 #include <string>
 #include <unordered_map>
 
+struct Table;
+struct TableUpdate;
+
 class Catalog : public std::enable_shared_from_this<Catalog> {
 public:
-  virtual void createTable(const std::string &database,
-                           const std::string &table) = 0;
+  virtual std::shared_ptr<Table> createTable(const Table &table) = 0;
 
   virtual bool tableExists(const std::string &database,
                            const std::string &table) = 0;
+
+  virtual std::shared_ptr<Table> getTable(const std::string &database,
+                                          const std::string &table) = 0;
+
+  virtual std::shared_ptr<Table> updateTable(const std::string &database,
+                                             const std::string &table,
+                                             const TableUpdate &update) = 0;
 };
 
 class CatalogManager {

@@ -1,4 +1,5 @@
-#include "InMemoryCatalog.h" // Include your actual header
+#include "InMemoryCatalog.h"
+#include "DbEntities.h"
 #include "gtest/gtest.h"
 #include <stdexcept>
 
@@ -6,17 +7,14 @@ TEST(InMemoryCatalogTest, TableDoesNotExistInitially) {
   InMemoryCatalog catalog;
   EXPECT_FALSE(catalog.tableExists("default", "users"));
 }
-
-TEST(InMemoryCatalogTest, CreateAndCheckTableInDefaultDatabase) {
-  InMemoryCatalog catalog;
-  catalog.createTable("default", "users");
-
-  EXPECT_TRUE(catalog.tableExists("default", "users"));
-}
-
 TEST(InMemoryCatalogTest, CreateAndCheckTableInNamedDatabase) {
   InMemoryCatalog catalog;
-  catalog.createTable("analytics", "events");
+  Table newTable;
+  newTable.name = "events";
+  newTable.catalog = "default";
+  newTable.database = {"analytics"};
+  newTable.schema = {{"id", "INT"}, {"event_time", "TIMESTAMP"}};
+  catalog.createTable(newTable);
 
   EXPECT_TRUE(catalog.tableExists("analytics", "events"));
   EXPECT_FALSE(catalog.tableExists("default", "events"));
@@ -28,20 +26,45 @@ TEST(InMemoryCatalogTest, TableDoesNotExist) {
   EXPECT_FALSE(catalog.tableExists("sales", "orders"));
 }
 
-TEST(InMemoryCatalogTest, DuplicateCreateTableHasNoEffect) {
+TEST(InMemoryCatalogTest, DuplicateCreateTableWillThrow) {
   InMemoryCatalog catalog;
-  catalog.createTable("default", "users");
-  catalog.createTable("default", "users"); // Duplicate
-
-  EXPECT_TRUE(catalog.tableExists("default", "users"));
+  Table newTable;
+  newTable.name = "events";
+  newTable.catalog = "default";
+  newTable.database = {"analytics"};
+  newTable.schema = {{"id", "INT"}, {"event_time", "TIMESTAMP"}};
+  catalog.createTable(newTable);
+  EXPECT_THROW(catalog.createTable(newTable), std::runtime_error);
+  // Attempting to create the same table again should throw an error
+  EXPECT_TRUE(catalog.tableExists("analytics", "events"));
 }
 
 TEST(InMemoryCatalogTest, EmptyDatabaseNameThrowsInCreateTable) {
   InMemoryCatalog catalog;
-  EXPECT_THROW(catalog.createTable("", "users"), std::runtime_error);
+  Table newTable;
+  newTable.name = "events";
+  newTable.catalog = "default";
+  newTable.database = {""};
+  newTable.schema = {{"id", "INT"}, {"event_time", "TIMESTAMP"}};
+  EXPECT_THROW(catalog.createTable(newTable), std::runtime_error);
+}
+
+TEST(InMemoryCatalogTest, EmptyTableNameThrowsInCreateTable) {
+  InMemoryCatalog catalog;
+  Table newTable;
+  newTable.name = "";
+  newTable.catalog = "default";
+  newTable.database = {"analytics"};
+  newTable.schema = {{"id", "INT"}, {"event_time", "TIMESTAMP"}};
+  EXPECT_THROW(catalog.createTable(newTable), std::runtime_error);
 }
 
 TEST(InMemoryCatalogTest, EmptyDatabaseNameThrowsInTableExists) {
   InMemoryCatalog catalog;
-  EXPECT_THROW(catalog.tableExists("", "users"), std::runtime_error);
+  EXPECT_THROW(catalog.tableExists("", "tbl"), std::runtime_error);
+}
+
+TEST(InMemoryCatalogTest, EmptyTableNameThrowsInTableExists) {
+  InMemoryCatalog catalog;
+  EXPECT_THROW(catalog.tableExists("db", ""), std::runtime_error);
 }

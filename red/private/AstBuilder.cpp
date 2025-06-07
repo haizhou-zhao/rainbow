@@ -278,7 +278,7 @@ std::any AstBuilder::visitAddTableColumns(
   plan->tableName()->nameParts = std::any_cast<std::vector<std::string>>(
       context->identifierReference()->accept(this));
   plan->columnsToAdd =
-      std::any_cast<std::vector<ColumnDef>>(context->columns->accept(this));
+      std::any_cast<std::vector<Column>>(context->columns->accept(this));
   return plan;
 }
 
@@ -1752,25 +1752,25 @@ std::any AstBuilder::visitPrimitiveDataType(
 
 std::any AstBuilder::visitQualifiedColTypeWithPositionList(
     SqlBaseParser::QualifiedColTypeWithPositionListContext *context) {
-  std::vector<ColumnDef> colDefs;
+  std::vector<Column> colDefs;
   auto colTypeWithPosition = context->qualifiedColTypeWithPosition();
   colDefs.reserve(colTypeWithPosition.size());
   std::transform(
       colTypeWithPosition.begin(), colTypeWithPosition.end(),
       std::back_inserter(colDefs),
       [this](SqlBaseParser::QualifiedColTypeWithPositionContext *ctx) {
-        return std::any_cast<ColumnDef>(visitQualifiedColTypeWithPosition(ctx));
+        return std::any_cast<Column>(visitQualifiedColTypeWithPosition(ctx));
       });
   return colDefs;
 }
 
 std::any AstBuilder::visitQualifiedColTypeWithPosition(
     SqlBaseParser::QualifiedColTypeWithPositionContext *context) {
-  ColumnDef colDef;
+  Column colDef;
   auto nameParts = std::any_cast<std::vector<std::string>>(
       context->multipartIdentifier()->accept(this));
   colDef.name = nameParts.empty() ? "" : nameParts.front();
-  colDef.dataType.typeName = context->dataType()->getText();
+  colDef.dataType = context->dataType()->getText();
   for (const auto &colDefDescriptor :
        context->colDefinitionDescriptorWithPosition()) {
     if (colDefDescriptor->errorCapturingNot() && colDefDescriptor->NULL_()) {
@@ -1826,7 +1826,7 @@ std::any AstBuilder::visitTableElementList(
                  [this](SqlBaseParser::TableElementContext *ctx) {
                    // TODO: table constraint
 
-                   return std::any_cast<ColumnDef>(
+                   return std::any_cast<Column>(
                        visitColDefinition(ctx->colDefinition()));
                  });
   // TODO: validate only one primary key
@@ -1845,9 +1845,9 @@ std::any AstBuilder::visitColDefinitionList(
 
 std::any
 AstBuilder::visitColDefinition(SqlBaseParser::ColDefinitionContext *context) {
-  ColumnDef colDef;
+  Column colDef;
   colDef.name = context->colName->identifier()->getText();
-  colDef.dataType.typeName =
+  colDef.dataType =
       std::any_cast<std::string>(context->dataType()->accept(this));
   colDef.bNullable = true;
   std::for_each(context->colDefinitionOption().begin(),

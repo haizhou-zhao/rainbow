@@ -32,7 +32,7 @@ RuleExecResult ResolveCatalogs::apply(std::shared_ptr<TreeNode> plan) const {
         break;
       case 1:
         resolved->catalogName = _sqlCtx->currentCatalogName;
-        resolved->nameParts = _sqlCtx->currentDatabaseName;
+        resolved->nameParts = _sqlCtx->currentDatabaseNameParts;
         resolved->nameParts.push_back(identifier->nameParts[0]);
         break;
       case 2:
