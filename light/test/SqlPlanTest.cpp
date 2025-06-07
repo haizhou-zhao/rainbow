@@ -162,13 +162,13 @@ TEST(CreateTableTest, RunCreatesTableWithResolvedIdentifier) {
   identifier->catalogName = "catalog1";
   createTable->bIfNotExist = false;
   createTable->columns = {
-      {"col1", {"INT"}, true, "comment1", "defaultExpr1", 0},
-      {"col2", {"STRING"}, true, "comment2", "defaultExpr2", 1}};
+      {"col1", "INT", true, "comment1", "defaultExpr1", 0},
+      {"col2", "STRING", true, "comment2", "defaultExpr2", 1}};
 
   SqlContext sqlCtx;
   CatalogManager catalogManager;
   sqlCtx.currentCatalogName = "defaultCatalog";
-  sqlCtx.currentDatabaseName = {"defaultDatabase"};
+  sqlCtx.currentDatabaseNameParts = {"defaultDatabase"};
   catalogManager.addCatalog("defaultCatalog",
                             std::make_shared<InMemoryCatalog>());
   catalogManager.addCatalog("catalog1", std::make_shared<InMemoryCatalog>());
@@ -178,6 +178,13 @@ TEST(CreateTableTest, RunCreatesTableWithResolvedIdentifier) {
 
   ASSERT_TRUE(sqlCtx.catalogManager->catalog("catalog1")
                   ->tableExists("test_db", "users"));
+
+  auto expectedSchema = std::vector<Column>{
+      {"col1", "INT", true, "comment1", "defaultExpr1", 0},
+      {"col2", "STRING", true, "comment2", "defaultExpr2", 1}};
+  ASSERT_EQ(expectedSchema, sqlCtx.catalogManager->catalog("catalog1")
+                                ->getTable("test_db", "users")
+                                ->schema);
 }
 
 TEST(CreateTableTest, RunCreatesTableWithUnresolvedIdentifier) {
@@ -185,20 +192,19 @@ TEST(CreateTableTest, RunCreatesTableWithUnresolvedIdentifier) {
   createTable->name()->nameParts = {"test_db", "users"};
   createTable->bIfNotExist = false;
   createTable->columns = {
-      {"col1", {"INT"}, true, "comment1", "defaultExpr1", 0},
-      {"col2", {"STRING"}, true, "comment2", "defaultExpr2", 1}};
+      {"col1", "INT", true, "comment1", "defaultExpr1", 0},
+      {"col2", "STRING", true, "comment2", "defaultExpr2", 1}};
 
   SqlContext sqlCtx;
   CatalogManager catalogManager;
   sqlCtx.currentCatalogName = "defaultCatalog";
-  sqlCtx.currentDatabaseName = {"defaultDatabase"};
+  sqlCtx.currentDatabaseNameParts = {"defaultDatabase"};
   catalogManager.addCatalog("defaultCatalog",
                             std::make_shared<InMemoryCatalog>());
   catalogManager.addCatalog("catalog1", std::make_shared<InMemoryCatalog>());
   sqlCtx.catalogManager = &catalogManager;
 
-  createTable->run(&sqlCtx);
-
+  ASSERT_THROW(createTable->run(&sqlCtx), std::runtime_error);
   ASSERT_FALSE(sqlCtx.catalogManager->catalog("catalog1")
                    ->tableExists("test_db", "users"));
 }
@@ -211,19 +217,25 @@ TEST(CreateTableTest, RunCreatesTableWithAlreadyExistingTable) {
   identifier->catalogName = "catalog1";
   createTable->bIfNotExist = false;
   createTable->columns = {
-      {"col1", {"INT"}, true, "comment1", "defaultExpr1", 0},
-      {"col2", {"STRING"}, true, "comment2", "defaultExpr2", 1}};
+      {"col1", "INT", true, "comment1", "defaultExpr1", 0},
+      {"col2", "STRING", true, "comment2", "defaultExpr2", 1}};
 
   SqlContext sqlCtx;
   CatalogManager catalogManager;
   sqlCtx.currentCatalogName = "defaultCatalog";
-  sqlCtx.currentDatabaseName = {"defaultDatabase"};
+  sqlCtx.currentDatabaseNameParts = {"defaultDatabase"};
   catalogManager.addCatalog("defaultCatalog",
                             std::make_shared<InMemoryCatalog>());
   catalogManager.addCatalog("catalog1", std::make_shared<InMemoryCatalog>());
   sqlCtx.catalogManager = &catalogManager;
+  Table newTable;
+  newTable.name = "users";
+  newTable.catalog = "catalog1";
+  newTable.database = {"test_db"};
+  newTable.schema = {{"col1", "INT", true, "comment1", "defaultExpr1", 0},
+                     {"col2", "STRING", true, "comment2", "defaultExpr2", 1}};
   catalogManager.catalog("catalog1")
-      ->createTable("test_db", "users"); // Pre-create the table
+      ->createTable(newTable); // Pre-create the table
 
   ASSERT_THROW(createTable->run(&sqlCtx), std::runtime_error);
 }
@@ -236,19 +248,25 @@ TEST(CreateTableTest, RunCreatesTableWithAlreadyExistingTableIfNotExist) {
   identifier->catalogName = "catalog1";
   createTable->bIfNotExist = true;
   createTable->columns = {
-      {"col1", {"INT"}, true, "comment1", "defaultExpr1", 0},
-      {"col2", {"STRING"}, true, "comment2", "defaultExpr2", 1}};
+      {"col1", "INT", true, "comment1", "defaultExpr1", 0},
+      {"col2", "STRING", true, "comment2", "defaultExpr2", 1}};
 
   SqlContext sqlCtx;
   CatalogManager catalogManager;
   sqlCtx.currentCatalogName = "defaultCatalog";
-  sqlCtx.currentDatabaseName = {"defaultDatabase"};
+  sqlCtx.currentDatabaseNameParts = {"defaultDatabase"};
   catalogManager.addCatalog("defaultCatalog",
                             std::make_shared<InMemoryCatalog>());
   catalogManager.addCatalog("catalog1", std::make_shared<InMemoryCatalog>());
   sqlCtx.catalogManager = &catalogManager;
+  Table newTable;
+  newTable.name = "users";
+  newTable.catalog = "catalog1";
+  newTable.database = {"test_db"};
+  newTable.schema = {{"col1", "INT", true, "comment1", "defaultExpr1", 0},
+                     {"col2", "STRING", true, "comment2", "defaultExpr2", 1}};
   catalogManager.catalog("catalog1")
-      ->createTable("test_db", "users"); // Pre-create the table
+      ->createTable(newTable); // Pre-create the table
 
   createTable->run(&sqlCtx);
 }
@@ -256,15 +274,13 @@ TEST(CreateTableTest, RunCreatesTableWithAlreadyExistingTableIfNotExist) {
 TEST(AddColumnsTest, EqualsWithSameFields) {
   AddColumns ac1;
   ac1.tableName()->nameParts = {"db", "table"};
-  ac1.columnsToAdd = {
-      {"col1", {"INT"}, true, "comment1", "defaultExpr1", 0},
-      {"col2", {"STRING"}, true, "comment2", "defaultExpr2", 1}};
+  ac1.columnsToAdd = {{"col1", "INT", true, "comment1", "defaultExpr1", 0},
+                      {"col2", "STRING", true, "comment2", "defaultExpr2", 1}};
 
   AddColumns ac2;
   ac2.tableName()->nameParts = {"db", "table"};
-  ac2.columnsToAdd = {
-      {"col1", {"INT"}, true, "comment1", "defaultExpr1", 0},
-      {"col2", {"STRING"}, true, "comment2", "defaultExpr2", 1}};
+  ac2.columnsToAdd = {{"col1", "INT", true, "comment1", "defaultExpr1", 0},
+                      {"col2", "STRING", true, "comment2", "defaultExpr2", 1}};
 
   EXPECT_TRUE(ac1.nodeEquals(ac2));
 }
@@ -272,15 +288,13 @@ TEST(AddColumnsTest, EqualsWithSameFields) {
 TEST(AddColumnsTest, NotEqualsDifferentName) {
   AddColumns ac1;
   ac1.tableName()->nameParts = {"db", "table1"};
-  ac1.columnsToAdd = {
-      {"col1", {"INT"}, true, "comment1", "defaultExpr1", 0},
-      {"col2", {"STRING"}, true, "comment2", "defaultExpr2", 1}};
+  ac1.columnsToAdd = {{"col1", "INT", true, "comment1", "defaultExpr1", 0},
+                      {"col2", "STRING", true, "comment2", "defaultExpr2", 1}};
 
   AddColumns ac2;
   ac2.tableName()->nameParts = {"db", "table2"};
-  ac2.columnsToAdd = {
-      {"col1", {"INT"}, true, "comment1", "defaultExpr1", 0},
-      {"col2", {"STRING"}, true, "comment2", "defaultExpr2", 1}};
+  ac2.columnsToAdd = {{"col1", "INT", true, "comment1", "defaultExpr1", 0},
+                      {"col2", "STRING", true, "comment2", "defaultExpr2", 1}};
 
   EXPECT_FALSE(ac1.nodeEquals(ac2));
 }
@@ -288,14 +302,13 @@ TEST(AddColumnsTest, NotEqualsDifferentName) {
 TEST(AddColumnsTest, NotEqualsDifferentIfNotExistFlag) {
   AddColumns ac1;
   ac1.tableName()->nameParts = {"db", "table"};
-  ac1.columnsToAdd = {
-      {"col1", {"INT"}, true, "comment1", "defaultExpr1", 0},
-      {"col2", {"STRING"}, true, "comment2", "defaultExpr2", 1}};
+  ac1.columnsToAdd = {{"col1", "INT", true, "comment1", "defaultExpr1", 0},
+                      {"col2", "STRING", true, "comment2", "defaultExpr2", 1}};
 
   AddColumns ac2;
   ac2.tableName()->nameParts = {"db", "table"};
-  ac2.columnsToAdd = {{"col1", {"INT"}, true, "comment1", "defaultExpr1", 0},
-                      {"col2", {"LONG"}, true, "comment2", "defaultExpr2", 1}};
+  ac2.columnsToAdd = {{"col1", "INT", true, "comment1", "defaultExpr1", 0},
+                      {"col2", "LONG", true, "comment2", "defaultExpr2", 1}};
 
   EXPECT_FALSE(ac1.nodeEquals(ac2));
 }
@@ -306,8 +319,8 @@ TEST(AddColumnsTest, NotEqualsDifferentType) {
 
   AddColumns ac;
   ac.tableName()->nameParts = {"db", "table"};
-  ac.columnsToAdd = {{"col1", {"INT"}, true, "comment1", "defaultExpr1", 0},
-                     {"col2", {"STRING"}, true, "comment2", "defaultExpr2", 1}};
+  ac.columnsToAdd = {{"col1", "INT", true, "comment1", "defaultExpr1", 0},
+                     {"col2", "STRING", true, "comment2", "defaultExpr2", 1}};
 
   EXPECT_FALSE(ac.nodeEquals(dummy));
 }
@@ -334,4 +347,76 @@ TEST(AddColumnsTest, NameFailsIfChildIsNotIdentifier) {
   std::shared_ptr<Identifier> result = ac.tableName();
 
   ASSERT_EQ(result, nullptr);
+}
+
+TEST(AddColumnsTest, RunAddColumnsWithResolvedIdentifier) {
+  auto addColumns = std::make_shared<AddColumns>();
+  auto identifier = std::make_shared<ResolvedIdentifier>();
+  addColumns->children[0] = identifier;
+  identifier->nameParts = {"test_db", "users"};
+  identifier->catalogName = "catalog1";
+  addColumns->columnsToAdd = {
+      {"col3", "TIMESTAMP", true, "comment3", "defaultExpr3", 3},
+      {"col4", "STRING", true, "comment4", "defaultExpr4", 4}};
+
+  SqlContext sqlCtx;
+  CatalogManager catalogManager;
+  sqlCtx.currentCatalogName = "defaultCatalog";
+  sqlCtx.currentDatabaseNameParts = {"defaultDatabase"};
+  catalogManager.addCatalog("defaultCatalog",
+                            std::make_shared<InMemoryCatalog>());
+  catalogManager.addCatalog("catalog1", std::make_shared<InMemoryCatalog>());
+  sqlCtx.catalogManager = &catalogManager;
+  Table newTable;
+  newTable.name = "users";
+  newTable.catalog = "catalog1";
+  newTable.database = {"test_db"};
+  newTable.schema = {{"col1", "INT", true, "comment1", "defaultExpr1", 0},
+                     {"col2", "STRING", true, "comment2", "defaultExpr2", 1}};
+  catalogManager.catalog("catalog1")
+      ->createTable(newTable); // Pre-create the table
+
+  addColumns->run(&sqlCtx);
+
+  auto expectedSchema = std::vector<Column>{
+      {"col1", "INT", true, "comment1", "defaultExpr1", 0},
+      {"col2", "STRING", true, "comment2", "defaultExpr2", 1},
+      {"col3", "TIMESTAMP", true, "comment3", "defaultExpr3", 3},
+      {"col4", "STRING", true, "comment4", "defaultExpr4", 4}};
+  ASSERT_EQ(expectedSchema, sqlCtx.catalogManager->catalog("catalog1")
+                                ->getTable("test_db", "users")
+                                ->schema);
+}
+
+TEST(AddColumnsTest, RunAddColumnsWithUnresolvedIdentifier) {
+  auto addColumns = std::make_shared<AddColumns>();
+  addColumns->tableName()->nameParts = {"test_db", "users"};
+  addColumns->columnsToAdd = {
+      {"col3", {"TIMESTAMP"}, true, "comment3", "defaultExpr3", 3},
+      {"col4", "STRING", true, "comment4", "defaultExpr4", 4}};
+
+  SqlContext sqlCtx;
+  CatalogManager catalogManager;
+  sqlCtx.currentCatalogName = "defaultCatalog";
+  sqlCtx.currentDatabaseNameParts = {"defaultDatabase"};
+  catalogManager.addCatalog("defaultCatalog",
+                            std::make_shared<InMemoryCatalog>());
+  catalogManager.addCatalog("catalog1", std::make_shared<InMemoryCatalog>());
+  sqlCtx.catalogManager = &catalogManager;
+  Table newTable;
+  newTable.name = "users";
+  newTable.catalog = "catalog1";
+  newTable.database = {"test_db"};
+  newTable.schema = {{"col1", "INT", true, "comment1", "defaultExpr1", 0},
+                     {"col2", "STRING", true, "comment2", "defaultExpr2", 1}};
+  catalogManager.catalog("catalog1")
+      ->createTable(newTable); // Pre-create the table
+
+  ASSERT_THROW(addColumns->run(&sqlCtx), std::runtime_error);
+  auto expectedSchema = std::vector<Column>{
+      {"col1", "INT", true, "comment1", "defaultExpr1", 0},
+      {"col2", "STRING", true, "comment2", "defaultExpr2", 1}};
+  ASSERT_EQ(expectedSchema, sqlCtx.catalogManager->catalog("catalog1")
+                                ->getTable("test_db", "users")
+                                ->schema);
 }

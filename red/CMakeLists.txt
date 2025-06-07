@@ -46,4 +46,5 @@ add_library(red private/AstBuilder.cpp
 target_link_libraries(red antlr4_static)
 target_include_directories(red PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/public)
 target_include_directories(red PUBLIC ${CMAKE_SOURCE_DIR}/light/public)
+target_include_directories(red PUBLIC ${CMAKE_SOURCE_DIR}/bridge/public)
 add_subdirectory(test)

@@ -26,7 +26,7 @@ TEST(ResolveCatalogsTest, AlreadyResolvedIdentifier) {
 TEST(ResolveCatalogsTest, OneNamePartIdentifierGetsCurrentCatalogAndDatabase) {
   SqlContext sqlCtx;
   sqlCtx.currentCatalogName = "defaultCatalog";
-  sqlCtx.currentDatabaseName = {"defaultDatabase"};
+  sqlCtx.currentDatabaseNameParts = {"defaultDatabase"};
   ResolveCatalogs resolver;
   resolver.init(&sqlCtx);
   std::shared_ptr<Identifier> id = std::make_shared<Identifier>();
@@ -46,7 +46,7 @@ TEST(ResolveCatalogsTest, OneNamePartIdentifierGetsCurrentCatalogAndDatabase) {
 TEST(ResolveCatalogsTest, TwoNamePartIdentifierGetsCurrentCatalog) {
   SqlContext sqlCtx;
   sqlCtx.currentCatalogName = "defaultCatalog";
-  sqlCtx.currentDatabaseName = {"defaultDatabase"};
+  sqlCtx.currentDatabaseNameParts = {"defaultDatabase"};
   ResolveCatalogs resolver;
   resolver.init(&sqlCtx);
   std::shared_ptr<Identifier> id = std::make_shared<Identifier>();
@@ -67,7 +67,7 @@ TEST(ResolveCatalogsTest, MultiNamePartIdentifierWithValidCatalogProvided) {
   SqlContext sqlCtx;
   CatalogManager catalogManager;
   sqlCtx.currentCatalogName = "defaultCatalog";
-  sqlCtx.currentDatabaseName = {"defaultDatabase"};
+  sqlCtx.currentDatabaseNameParts = {"defaultDatabase"};
   catalogManager.addCatalog("defaultCatalog",
                             std::make_shared<InMemoryCatalog>());
   catalogManager.addCatalog("catalog1", std::make_shared<InMemoryCatalog>());
@@ -92,7 +92,7 @@ TEST(ResolveCatalogsTest, MultiNamePartIdentifierWithNoCatalogProvided) {
   SqlContext sqlCtx;
   CatalogManager catalogManager;
   sqlCtx.currentCatalogName = "defaultCatalog";
-  sqlCtx.currentDatabaseName = {"defaultDatabase"};
+  sqlCtx.currentDatabaseNameParts = {"defaultDatabase"};
   catalogManager.addCatalog("defaultCatalog",
                             std::make_shared<InMemoryCatalog>());
   catalogManager.addCatalog("catalog1", std::make_shared<InMemoryCatalog>());

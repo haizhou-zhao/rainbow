@@ -32,7 +32,7 @@ int main(int , const char **) {
   r.init(&sqlCtx);
   auto result = plan->resolveRulesDownWithPruning([](const TreeNode* n){ return false; }, &r);
   (std::dynamic_pointer_cast<CreateTable>(result.afterRule))->run(&sqlCtx);
-  assert(sqlCtx.currentCatalog()->tableExists("default", "my_tbl1"));
+  assert(sqlCtx.currentCatalog()->tableExists(sqlCtx.currentDatabaseName(), "my_tbl1"));
 
   ANTLRInputStream input2("ALTER TABLE my_tbl1 ADD COLUMNS (event_time TIMESTAMP)");
   SqlBaseLexer lexer2(&input2);
@@ -42,15 +42,8 @@ int main(int , const char **) {
   std::cout << parsed2->toStringTree() << std::endl;
   std::shared_ptr<AddColumns> plan2 = std::any_cast<std::shared_ptr<AddColumns>>(AstBuilder().visitCompoundOrSingleStatement(parsed2));
   auto result2 = plan2->resolveRulesDownWithPruning([](const TreeNode* n){ return false; }, &r);
-  std::shared_ptr<ResolvedIdentifier> identifier2 = std::static_pointer_cast<ResolvedIdentifier>(std::static_pointer_cast<AddColumns>(result2.afterRule)->tableName());
-  
-  assert(plan2->tableName()->nameParts.size() == 2);
-  assert(plan2->tableName()->nameParts[0] == "default");
-  assert(plan2->tableName()->nameParts[1] == "my_tbl1");
-  assert(plan2->columnsToAdd.size() == 1);
-  assert(plan2->columnsToAdd[0].name == "event_time");
-  assert(plan2->columnsToAdd[0].dataType.typeName == "TIMESTAMP");
-  assert(plan2->columnsToAdd[0].bNullable == true);
+  (std::dynamic_pointer_cast<AddColumns>(result2.afterRule))->run(&sqlCtx);
+  assert(sqlCtx.currentCatalog()->getTable(sqlCtx.currentDatabaseName(), "my_tbl1")->schema.size() == 3);
 
   return 0;
 }

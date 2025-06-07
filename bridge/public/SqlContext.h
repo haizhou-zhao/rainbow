@@ -9,7 +9,8 @@ class CatalogManager;
 struct SqlContext {
   CatalogManager *catalogManager;
   std::string currentCatalogName = "default";
-  std::vector<std::string> currentDatabaseName = {"default"};
+  std::vector<std::string> currentDatabaseNameParts = {"default"};
 
   std::shared_ptr<Catalog> currentCatalog() const;
+  std::string currentDatabaseName() const;
 };

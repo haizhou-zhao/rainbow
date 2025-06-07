@@ -21,9 +21,9 @@ TEST(AstBuilderTest, CreateTableStatement) {
   ASSERT_EQ(plan->name()->nameParts[0], "my_tbl1");
   ASSERT_EQ(plan->columns.size(), 2);
   ASSERT_EQ(plan->columns[0].name, "id");
-  ASSERT_EQ(plan->columns[0].dataType.typeName, "INT");
+  ASSERT_EQ(plan->columns[0].dataType, "INT");
   ASSERT_EQ(plan->columns[1].name, "data");
-  ASSERT_EQ(plan->columns[1].dataType.typeName, "STRING");
+  ASSERT_EQ(plan->columns[1].dataType, "STRING");
   ASSERT_FALSE(plan->bIfNotExist);
 }
 
@@ -43,9 +43,9 @@ TEST(AstBuilderTest, CreateTableIfNotExistStatement) {
   ASSERT_EQ(plan->name()->nameParts[0], "my_tbl1");
   ASSERT_EQ(plan->columns.size(), 2);
   ASSERT_EQ(plan->columns[0].name, "id");
-  ASSERT_EQ(plan->columns[0].dataType.typeName, "INT");
+  ASSERT_EQ(plan->columns[0].dataType, "INT");
   ASSERT_EQ(plan->columns[1].name, "data");
-  ASSERT_EQ(plan->columns[1].dataType.typeName, "STRING");
+  ASSERT_EQ(plan->columns[1].dataType, "STRING");
   ASSERT_TRUE(plan->bIfNotExist);
 }
 
@@ -64,7 +64,7 @@ TEST(AstBuilderTest, AlterTableAddColumns) {
   ASSERT_EQ(plan->tableName()->nameParts[0], "my_tbl1");
   ASSERT_EQ(plan->columnsToAdd.size(), 1);
   ASSERT_EQ(plan->columnsToAdd[0].name, "event_time");
-  ASSERT_EQ(plan->columnsToAdd[0].dataType.typeName, "TIMESTAMP");
+  ASSERT_EQ(plan->columnsToAdd[0].dataType, "TIMESTAMP");
   ASSERT_TRUE(plan->columnsToAdd[0].bNullable);
   ASSERT_TRUE(plan->columnsToAdd[0].comment.empty());
   ASSERT_TRUE(plan->columnsToAdd[0].defaultExpr.empty());
@@ -85,7 +85,7 @@ TEST(AstBuilderTest, AlterTableAddColumnsWithCommentInSingleQuote) {
   ASSERT_EQ(plan->tableName()->nameParts[0], "my_tbl1");
   ASSERT_EQ(plan->columnsToAdd.size(), 1);
   ASSERT_EQ(plan->columnsToAdd[0].name, "event_time");
-  ASSERT_EQ(plan->columnsToAdd[0].dataType.typeName, "TIMESTAMP");
+  ASSERT_EQ(plan->columnsToAdd[0].dataType, "TIMESTAMP");
   ASSERT_TRUE(plan->columnsToAdd[0].bNullable);
   ASSERT_EQ("Event time", plan->columnsToAdd[0].comment);
   ASSERT_TRUE(plan->columnsToAdd[0].defaultExpr.empty());
@@ -106,7 +106,7 @@ TEST(AstBuilderTest, AlterTableAddColumnsWithCommentInDoubleQuote) {
   ASSERT_EQ(plan->tableName()->nameParts[0], "my_tbl1");
   ASSERT_EQ(plan->columnsToAdd.size(), 1);
   ASSERT_EQ(plan->columnsToAdd[0].name, "event_time");
-  ASSERT_EQ(plan->columnsToAdd[0].dataType.typeName, "TIMESTAMP");
+  ASSERT_EQ(plan->columnsToAdd[0].dataType, "TIMESTAMP");
   ASSERT_TRUE(plan->columnsToAdd[0].bNullable);
   ASSERT_EQ("Event time", plan->columnsToAdd[0].comment);
   ASSERT_TRUE(plan->columnsToAdd[0].defaultExpr.empty());
@@ -127,7 +127,7 @@ TEST(AstBuilderTest, AlterTableAddColumnsWithNOTNULL) {
   ASSERT_EQ(plan->tableName()->nameParts[0], "my_tbl1");
   ASSERT_EQ(plan->columnsToAdd.size(), 1);
   ASSERT_EQ(plan->columnsToAdd[0].name, "event_time");
-  ASSERT_EQ(plan->columnsToAdd[0].dataType.typeName, "TIMESTAMP");
+  ASSERT_EQ(plan->columnsToAdd[0].dataType, "TIMESTAMP");
   ASSERT_FALSE(plan->columnsToAdd[0].bNullable);
   ASSERT_TRUE(plan->columnsToAdd[0].comment.empty());
   ASSERT_TRUE(plan->columnsToAdd[0].defaultExpr.empty());
@@ -148,7 +148,7 @@ TEST(AstBuilderTest, AlterTableAddColumnsWithDefaultExpr) {
   ASSERT_EQ(plan->tableName()->nameParts[0], "my_tbl1");
   ASSERT_EQ(plan->columnsToAdd.size(), 1);
   ASSERT_EQ(plan->columnsToAdd[0].name, "event_time");
-  ASSERT_EQ(plan->columnsToAdd[0].dataType.typeName, "TIMESTAMP");
+  ASSERT_EQ(plan->columnsToAdd[0].dataType, "TIMESTAMP");
   ASSERT_TRUE(plan->columnsToAdd[0].bNullable);
   ASSERT_TRUE(plan->columnsToAdd[0].comment.empty());
   ASSERT_EQ("current_timestamp()", plan->columnsToAdd[0].defaultExpr);
@@ -170,7 +170,7 @@ TEST(AstBuilderTest, AlterTableAddColumnsWithAllDescriptors) {
   ASSERT_EQ(plan->tableName()->nameParts[0], "my_tbl1");
   ASSERT_EQ(plan->columnsToAdd.size(), 1);
   ASSERT_EQ(plan->columnsToAdd[0].name, "event_time");
-  ASSERT_EQ(plan->columnsToAdd[0].dataType.typeName, "TIMESTAMP");
+  ASSERT_EQ(plan->columnsToAdd[0].dataType, "TIMESTAMP");
   ASSERT_FALSE(plan->columnsToAdd[0].bNullable);
   ASSERT_EQ("Event time", plan->columnsToAdd[0].comment);
   ASSERT_EQ("current_timestamp()", plan->columnsToAdd[0].defaultExpr);
