@@ -19,6 +19,15 @@ private:
     // std::vector<TableConstraint> tableConstraint;
   };
 
+  struct InsertTableParams {
+    std::vector<std::string> identifier;
+    // std::optional<SqlBaseParser::OptionsClauseContext *> options;
+    std::vector<std::string> userSpecifiedCols;
+    // std::map<std::string, std::optional<std::string>> partitionSpec;
+    bool ifPartitionNotExists;
+    bool byName;
+  };
+
   void stripSingleQuotes(std::string &s) const;
 
   void stripDoubleQuotes(std::string &s) const;

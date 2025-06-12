@@ -8,6 +8,7 @@ struct Column {
   std::string dataType;
   bool bNullable = true; // default is nullable, unless specified as NOT NULL
   std::string comment;
+  // TODO: type should be expr instead of string
   std::string defaultExpr;
   std::size_t position;
   // std::string generationExpression;

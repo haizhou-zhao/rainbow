@@ -1,5 +1,6 @@
 #include "AstBuilder.h"
 #include "SqlPlan.h"
+#include <variant>
 
 AstBuilder::AstBuilder() {}
 
@@ -133,7 +134,6 @@ AstBuilder::visitForStatement(SqlBaseParser::ForStatementContext *context) {
 std::any AstBuilder::visitSingleStatement(
     SqlBaseParser::SingleStatementContext *context) {
   return context->statement()->accept(this);
-  ;
 }
 
 std::any
@@ -187,7 +187,13 @@ std::any AstBuilder::visitVisitExecuteImmediate(
 
 std::any
 AstBuilder::visitDmlStatement(SqlBaseParser::DmlStatementContext *context) {
-  return std::any();
+  return context->dmlStatementNoWith()->accept(this);
+  // TODO: Apply CTEs
+  // if (context->ctes()) {
+  //   // Assuming withCTE is a method that processes CTEs
+  //   return std::any_cast<std::shared_ptr<SqlPlan>>(
+  //       context->ctes()->accept(this));
+  // }
 }
 
 std::any AstBuilder::visitUse(SqlBaseParser::UseContext *context) {
@@ -716,7 +722,8 @@ AstBuilder::visitSingleQuery(SqlBaseParser::SingleQueryContext *context) {
 }
 
 std::any AstBuilder::visitQuery(SqlBaseParser::QueryContext *context) {
-  return std::any();
+  return context->queryTerm()->accept(this);
+  // TODO: Handle ctes and query organization
 }
 
 std::any AstBuilder::visitInsertOverwriteTable(
@@ -726,7 +733,12 @@ std::any AstBuilder::visitInsertOverwriteTable(
 
 std::any AstBuilder::visitInsertIntoTable(
     SqlBaseParser::InsertIntoTableContext *context) {
-  return std::any();
+  InsertTableParams params;
+  params.identifier = std::any_cast<std::vector<std::string>>(
+      context->identifierReference()->accept(this));
+  // TODO: Handle other insert table parameters
+
+  return params;
 }
 
 std::any AstBuilder::visitInsertIntoReplaceWhere(
@@ -866,7 +878,15 @@ std::any AstBuilder::visitResource(SqlBaseParser::ResourceContext *context) {
 
 std::any AstBuilder::visitSingleInsertQuery(
     SqlBaseParser::SingleInsertQueryContext *context) {
-  return std::any();
+  auto insertIntoStmt = std::make_shared<InsertInto>();
+  auto insertParams =
+      std::any_cast<InsertTableParams>(context->insertInto()->accept(this));
+  auto tableName = std::make_shared<Identifier>();
+  tableName->nameParts = insertParams.identifier;
+  insertIntoStmt->setTableName(tableName);
+  insertIntoStmt->setQuery(std::any_cast<std::shared_ptr<InlineTable>>(
+      context->query()->accept(this)));
+  return insertIntoStmt;
 }
 
 std::any AstBuilder::visitMultiInsertQuery(
@@ -916,7 +936,7 @@ std::any AstBuilder::visitOperatorPipeStatement(
 
 std::any AstBuilder::visitQueryTermDefault(
     SqlBaseParser::QueryTermDefaultContext *context) {
-  return std::any();
+  return context->queryPrimary()->accept(this);
 }
 
 std::any
@@ -939,7 +959,7 @@ std::any AstBuilder::visitTable(SqlBaseParser::TableContext *context) {
 
 std::any AstBuilder::visitInlineTableDefault1(
     SqlBaseParser::InlineTableDefault1Context *context) {
-  return std::any();
+  return context->inlineTable()->accept(this);
 }
 
 std::any AstBuilder::visitSubquery(SqlBaseParser::SubqueryContext *context) {
@@ -1271,7 +1291,15 @@ AstBuilder::visitOptionsClause(SqlBaseParser::OptionsClauseContext *context) {
 
 std::any
 AstBuilder::visitInlineTable(SqlBaseParser::InlineTableContext *context) {
-  return std::any();
+  auto inlineTable = std::make_shared<InlineTable>();
+  auto expressions = context->expression();
+  std::transform(expressions.begin(), expressions.end(),
+                 std::back_inserter(inlineTable->rows),
+                 [this](SqlBaseParser::ExpressionContext *expr) {
+                   return std::any_cast<std::shared_ptr<Row>>(
+                       expr->booleanExpression()->accept(this));
+                 });
+  return inlineTable;
 }
 
 std::any AstBuilder::visitFunctionTableSubqueryArgument(
@@ -1358,7 +1386,10 @@ std::any AstBuilder::visitFunctionIdentifier(
 
 std::any AstBuilder::visitNamedExpression(
     SqlBaseParser::NamedExpressionContext *context) {
-  return std::any();
+  return context->expression()->accept(this);
+  // TODO: Handle alias and identifier list
+  // context->errorCapturingIdentifier()->accept(this);
+  // context->identifierList()->accept(this);
 }
 
 std::any AstBuilder::visitNamedExpressionSeq(
@@ -1398,7 +1429,7 @@ std::any AstBuilder::visitTransformArgument(
 
 std::any
 AstBuilder::visitExpression(SqlBaseParser::ExpressionContext *context) {
-  return context->getText();
+  return context->booleanExpression()->accept(this);
 }
 
 std::any AstBuilder::visitNamedArgumentExpression(
@@ -1423,7 +1454,13 @@ AstBuilder::visitLogicalNot(SqlBaseParser::LogicalNotContext *context) {
 
 std::any
 AstBuilder::visitPredicated(SqlBaseParser::PredicatedContext *context) {
-  return std::any();
+  return context->valueExpression()->accept(this);
+  // TODO: Handle predicate
+  // if (ctx.predicate != null) {
+  //     withPredicate(e, ctx.predicate)
+  //   } else {
+  //     e
+  //   }
 }
 
 std::any AstBuilder::visitExists(SqlBaseParser::ExistsContext *context) {
@@ -1446,7 +1483,7 @@ std::any AstBuilder::visitErrorCapturingNot(
 
 std::any AstBuilder::visitValueExpressionDefault(
     SqlBaseParser::ValueExpressionDefaultContext *context) {
-  return std::any();
+  return context->primaryExpression()->accept(this);
 }
 
 std::any
@@ -1540,7 +1577,16 @@ std::any AstBuilder::visitColumnReference(
 
 std::any
 AstBuilder::visitRowConstructor(SqlBaseParser::RowConstructorContext *context) {
-  return std::any();
+  auto row = std::make_shared<Row>();
+  auto expressions = context->namedExpression();
+  std::transform(expressions.begin(), expressions.end(),
+                 std::back_inserter(row->values),
+                 [this](SqlBaseParser::NamedExpressionContext *expr) {
+                   return std::any_cast<
+                       std::variant<int, long long, std::string, std::time_t>>(
+                       expr->accept(this));
+                 });
+  return row;
 }
 
 std::any AstBuilder::visitLast(SqlBaseParser::LastContext *context) {
@@ -1575,7 +1621,7 @@ std::any AstBuilder::visitCollate(SqlBaseParser::CollateContext *context) {
 
 std::any AstBuilder::visitConstantDefault(
     SqlBaseParser::ConstantDefaultContext *context) {
-  return std::any();
+  return context->constant()->accept(this);
 }
 
 std::any AstBuilder::visitExtract(SqlBaseParser::ExtractContext *context) {
@@ -1584,7 +1630,11 @@ std::any AstBuilder::visitExtract(SqlBaseParser::ExtractContext *context) {
 
 std::any
 AstBuilder::visitFunctionCall(SqlBaseParser::FunctionCallContext *context) {
-  return std::any();
+  // TODO: should return a FunctionCall (derived from Expression) instead of
+  // string auto functionName = std::any_cast<std::string>(
+  //     context->functionName()->accept(this));
+  // return std::make_shared<FunctionCall>(functionName);
+  return context->functionName()->accept(this);
 }
 
 std::any
@@ -1627,12 +1677,31 @@ std::any AstBuilder::visitIntervalLiteral(
 
 std::any AstBuilder::visitTypeConstructor(
     SqlBaseParser::TypeConstructorContext *context) {
-  return std::any();
+  auto value = std::any_cast<std::string>(context->stringLit()->accept(this));
+  std::variant<int, long long, std::string, std::time_t> result;
+  std::tm t{};
+  switch (context->literalType()->start->getType()) {
+  case SqlBaseParser::TIMESTAMP:
+    if (strptime(value.c_str(), "%Y-%m-%d %H:%M:%S", &t)) {
+      // Convert to a timestamp representation, e.g., seconds since epoch
+      result = std::mktime(&t);
+    } else {
+      throw std::runtime_error("Failed to parse timestamp: " + value);
+    }
+    break;
+  // TODO: Handle other types
+  default:
+    throw std::runtime_error("Unsupported literal type: " +
+                             context->literalType()->getText());
+    break;
+  }
+
+  return result;
 }
 
 std::any
 AstBuilder::visitNumericLiteral(SqlBaseParser::NumericLiteralContext *context) {
-  return std::any();
+  return context->number()->accept(this);
 }
 
 std::any
@@ -1642,7 +1711,15 @@ AstBuilder::visitBooleanLiteral(SqlBaseParser::BooleanLiteralContext *context) {
 
 std::any
 AstBuilder::visitStringLiteral(SqlBaseParser::StringLiteralContext *context) {
-  return std::any();
+  auto stringLit = context->stringLit();
+  std::variant<int, long long, std::string, std::time_t> strVal =
+      std::accumulate(stringLit.begin(), stringLit.end(), std::string(),
+                      [this](const std::string &str,
+                             SqlBaseParser::StringLitContext *part) {
+                        return str +
+                               std::any_cast<std::string>(part->accept(this));
+                      });
+  return strVal;
 }
 
 std::any AstBuilder::visitComparisonOperator(
@@ -1984,12 +2061,18 @@ std::any AstBuilder::visitQualifiedNameList(
 
 std::any
 AstBuilder::visitFunctionName(SqlBaseParser::FunctionNameContext *context) {
-  return std::any();
+  return context->qualifiedName()->accept(this);
 }
 
 std::any
 AstBuilder::visitQualifiedName(SqlBaseParser::QualifiedNameContext *context) {
-  return std::any();
+  auto nameParts = context->identifier();
+  return std::accumulate(
+      nameParts.begin(), nameParts.end(), std::string(),
+      [this](const std::string &acc, SqlBaseParser::IdentifierContext *part) {
+        return acc + (acc.empty() ? "" : ".") +
+               std::any_cast<std::string>(visitIdentifier(part));
+      });
 }
 
 std::any AstBuilder::visitErrorCapturingIdentifier(
@@ -2048,7 +2131,22 @@ std::any AstBuilder::visitLegacyDecimalLiteral(
 
 std::any
 AstBuilder::visitIntegerLiteral(SqlBaseParser::IntegerLiteralContext *context) {
-  return std::any();
+  auto intTxt = context->getText();
+  // If out of range for long long, then represent as string
+  std::variant<int, long long, std::string, std::time_t> intValue;
+  try {
+    intValue = std::stoi(intTxt);
+  } catch (const std::out_of_range &e) {
+    try {
+      // Try to convert to long long if it fails for int
+      intValue = std::stoll(intTxt);
+    } catch (const std::out_of_range &e) {
+      // If still out of range, return as string
+      intValue = intTxt;
+    }
+  }
+
+  return intValue;
 }
 
 std::any

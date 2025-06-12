@@ -97,3 +97,82 @@ void AddColumns::run(const SqlContext *sqlCtx) const {
 std::shared_ptr<Identifier> AddColumns::tableName() const {
   return std::dynamic_pointer_cast<Identifier>(children[0]);
 }
+
+bool Query::nodeEquals(const TreeNode &other) const {
+  const Query *o = dynamic_cast<const Query *>(&other);
+  if (o) {
+    return queryName == o->queryName;
+  } else {
+    return false;
+  }
+}
+
+bool InlineTable::nodeEquals(const TreeNode &other) const {
+  const InlineTable *o = dynamic_cast<const InlineTable *>(&other);
+  if (o) {
+    // TODO: not pointer equality, but value equality
+    return rows == o->rows;
+  } else {
+    return false;
+  }
+}
+
+InsertInto::InsertInto() {
+  children.resize(2);
+  // The first child is the table name, the second child is the query
+  // i.e. query could be a "VALUES" clause or a "SELECT" statement
+  children[0] = std::make_shared<Identifier>();
+  children[1] = std::make_shared<Query>();
+}
+
+bool InsertInto::nodeEquals(const TreeNode &other) const {
+  const InsertInto *o = dynamic_cast<const InsertInto *>(&other);
+  if (o) {
+    // TODO: compare query with nodeEquals or equality operator?
+    return *(tableName()) == *(o->tableName()) && *(query()) == *(o->query());
+  } else {
+    return false;
+  }
+}
+
+void InsertInto::run(const SqlContext *sqlCtx) const {
+  std::shared_ptr<ResolvedIdentifier> identifier =
+      std::dynamic_pointer_cast<ResolvedIdentifier>(tableName());
+  if (identifier) {
+    if (sqlCtx->catalogManager->catalog(identifier->catalogName)
+            ->tableExists(identifier->databaseName(),
+                          identifier->tableName())) {
+      // TODO: Implement the logic to insert data into the table
+    } else {
+      throw std::runtime_error("Table does not exist: " +
+                               identifier->fullName());
+    }
+  } else {
+    throw std::runtime_error(
+        "Cannot run insert into on unresolved table name.");
+  }
+}
+
+std::shared_ptr<Identifier> InsertInto::tableName() const {
+  return std::dynamic_pointer_cast<Identifier>(children[0]);
+}
+
+void InsertInto::setTableName(std::shared_ptr<Identifier> tableName) {
+  if (tableName) {
+    children[0] = tableName;
+  } else {
+    throw std::invalid_argument("Table name cannot be null");
+  }
+}
+
+std::shared_ptr<Query> InsertInto::query() const {
+  return std::dynamic_pointer_cast<Query>(children[1]);
+}
+
+void InsertInto::setQuery(std::shared_ptr<Query> query) {
+  if (query) {
+    children[1] = query;
+  } else {
+    throw std::invalid_argument("Query cannot be null");
+  }
+}
